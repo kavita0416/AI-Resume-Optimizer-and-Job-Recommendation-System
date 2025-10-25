@@ -1,0 +1,39 @@
+{
+  "name": "ai-resume-optimizer-and-job-recommendation-system",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "It detects resume and provide ATS score to improve the chances of selection, Higher the score higher the chance of getting selected. Another feature is job reccommendation via email.",
+  "main": "src/server.js",
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/kavita0416/AI-Resume-Optimizer-and-Job-Recommendation-System.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/kavita0416/AI-Resume-Optimizer-and-Job-Recommendation-System/issues"
+  },
+  "homepage": "https://github.com/kavita0416/AI-Resume-Optimizer-and-Job-Recommendation-System#readme",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "bull": "^4.16.5",
+    "cors": "^2.8.5",
+    "dotenv": "^17.2.2",
+    "express": "^5.1.0",
+    "express-rate-limit": "^6.11.2",
+    "ioredis": "^5.8.0",
+    "jsonwebtoken": "^9.0.2",
+    "mongoose": "^8.18.1",
+    "morgan": "^1.10.0",
+    "multer": "^2.0.2",
+    "serve-favicon": "^2.5.1"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
