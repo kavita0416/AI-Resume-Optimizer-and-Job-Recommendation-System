@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Resume Analyzer</title>
+  <style>
+    body { font-family: Arial, sans-serif; text-align: center; margin: 40px; }
+    form { margin-bottom: 30px; }
+    button { padding: 10px 20px; background: #4CAF50; color: white; border: none; cursor: pointer; }
+    button:hover { background: #45a049; }
+    #result { margin-top: 20px; text-align: left; display: inline-block; }
+  </style>
+</head>
+<body>
+
+  <h1>Upload Your Resume</h1>
+  <form id="uploadForm">
+    <input type="file" name="file" accept=".pdf,.docx,.txt" required />
+    <button type="submit">Upload Resume</button>
+  </form>
+
+  <div id="result"></div>
+
+  <script>
+    document.getElementById("uploadForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const fileInput = e.target.file;
+      const file = fileInput.files[0];
+      if (!file) return alert("Please select a file first!");
+
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const response = await fetch("/upload", {
+        method: "POST",
+        body: formData
+      });
+
+      if (!response.ok) {
+        const errText = await response.text();
+        alert("Upload failed: " + errText);
+        return;
+      }
+
+      const data = await response.json();
+
+      // handle different backend keys safely
+      const ats = data.atsScore || data.ats_score || "N/A";
+      const recs = data.recommendations || data.recommended_jobs || [];
+
+      document.getElementById("result").innerHTML = `
+        <h3>Filename: ${data.filename || file.name}</h3>
+        <p><b>ATS Score:</b> ${ats}%</p>
+        <h4>Recommended Jobs:</h4>
+        <ul>
+          ${recs.map(r =>
+            typeof r === "string"
+              ? `<li>${r}</li>`
+              : `<li><b>${r.title}</b> — ${r.desc || ""}</li>`
+          ).join("")}
+        </ul>
+      `;
+    };
+  </script>
+
+</body>
+</html>
