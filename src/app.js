@@ -6,6 +6,7 @@ import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
 import resumeRoutes from "./routes/resumeRoutes.js";
 
+
 const app = express();
 
 // Middleware
@@ -13,6 +14,9 @@ app.use(express.json());
 app.use(cors());
 app.use(morgan("dev"));
 app.use(rateLimit({ windowMs: 15 * 60 * 1000, max: 100 })); // 100 requests / 15min
+
+// Serve uploaded files statically
+app.use("/uploads", express.static("uploads"));  
 
 // Routes
 app.use("/api/auth", authRoutes);

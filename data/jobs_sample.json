@@ -1,0 +1,18 @@
+[
+  {
+    "title": "Backend Developer",
+    "company": "DataWorks",
+    "location": "Bhopal",
+    "description": "Build REST APIs with Node.js, Express and MongoDB. Work on microservices.",
+    "skills": ["Node.js", "Express", "MongoDB"],
+    "url": "https://dataworks.com/jobs/backend"
+  },
+  {
+    "title": "Full Stack Engineer",
+    "company": "InnovateX",
+    "location": "Pune",
+    "description": "Front-end with React + backend Node.js. Deploy on Docker/Kubernetes.",
+    "skills": ["React", "Node.js", "Docker"],
+    "url": "https://innovatex.com/jobs/fullstack"
+  }
+]

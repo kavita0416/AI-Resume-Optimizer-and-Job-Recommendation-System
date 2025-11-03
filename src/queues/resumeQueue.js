@@ -1,26 +1,32 @@
-import Queue from "bull";
+import { Queue } from "bullmq";
+import Redis from "ioredis";
 import dotenv from "dotenv";
+
 
 dotenv.config();
 
-// Create Bull queue connected to Redis Cloud
-const resumeQueue = new Queue("resume-analysis", process.env.REDIS_URL);
 
-// ✅ Log events for debugging
-resumeQueue.on("waiting", (jobId) => {
-  console.log(`📥 Job waiting in queue: ${jobId}`);
+const useTLS = process.env.REDIS_TLS === "true"; 
+
+
+// console.log("Redis Config =>", process.env.REDIS_HOST, process.env.REDIS_PORT, process.env.REDIS_TLS);
+
+const connection = {
+  host: process.env.REDIS_HOST,
+  port: Number(process.env.REDIS_PORT),
+  password: process.env.REDIS_PASSWORD,
+  ...(useTLS ? { tls: { rejectUnauthorized: false } } : {}),
+};
+
+
+console.log("Redis Config =>", process.env.REDIS_HOST, process.env.REDIS_PORT, useTLS ? "TLS enabled" : "TLS disabled");
+
+
+const resumeQueue = new Queue("resumeQueue", { connection });
+
+resumeQueue.on("error", (err) => {
+  console.error("❌ Queue error:", err);
 });
 
-resumeQueue.on("active", (job) => {
-  console.log(`⚡ Job started: ${job.id}`);
-});
-
-resumeQueue.on("completed", (job, result) => {
-  console.log(`✅ Job completed: ${job.id}`, result);
-});
-
-resumeQueue.on("failed", (job, err) => {
-  console.error(`❌ Job failed: ${job.id}`, err);
-});
 
 export default resumeQueue;

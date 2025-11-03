@@ -22,15 +22,18 @@
   "dependencies": {
     "bcryptjs": "^2.4.3",
     "bull": "^4.16.5",
+    "bullmq": "^5.61.2",
     "cors": "^2.8.5",
+    "csv-parse": "^6.1.0",
     "dotenv": "^17.2.2",
     "express": "^5.1.0",
     "express-rate-limit": "^6.11.2",
-    "ioredis": "^5.8.0",
+    "ioredis": "^5.8.2",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.18.1",
     "morgan": "^1.10.0",
     "multer": "^2.0.2",
+    "openai": "^6.7.0",
     "serve-favicon": "^2.5.1"
   },
   "devDependencies": {
