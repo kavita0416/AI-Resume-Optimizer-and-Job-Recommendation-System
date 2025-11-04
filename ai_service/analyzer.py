@@ -11,7 +11,9 @@ embedder = SentenceTransformer("all-MiniLM-L6-v2")
 
 # simple skill seed list (extendable)
 COMMON_SKILLS = ["python","java","javascript","react","node.js","node","django","flask","sql","mongodb",
-                 "aws","docker","kubernetes","machine learning","nlp","tensorflow","pytorch","excel"]
+                 "aws","docker","kubernetes","machine learning","nlp","tensorflow","pytorch","excel","powerpoint",
+                 "communication","leadership","project management","git","html","css","linux","c++","c#","go","ruby","php",
+                 "data analysis","data science","tableau","power bi","agile","scrum","rest","graphql","ci/cd","devops","unity","unreal engine","swift","kotlin  ","android","ios" ,"sales","marketing","seo","content writing","customer service","accounting","financial analysis","business analysis","human resources","recruitment","training","public speaking","time management","problem solving","critical thinking","teamwork","collaboration","adaptability","creativity","strategic planning","negotiation","conflict resolution","research","networking","branding","social media","email marketing","event planning","budgeting","forecasting","supply chain management","logistics","quality assurance","regulatory compliance","risk management","data visualization","big data","hadoop","spark","sas","r programming","matlab","solidworks","autocad","photoshop","illustrator","video editing","animation","3d modeling"]
 
 def clean_tokens(text):
     return text.replace("\n"," ").strip()
