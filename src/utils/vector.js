@@ -16,9 +16,9 @@ export function cosineSimilarity(a, b) {
   return dot(a, b) / denom;
 }
 
-export function topNByScore(items, scoreFn, n = 10) {
-  // compute scores
-  const scored = items.map((it) => ({ item: it, score: scoreFn(it) }));
-  scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, n).map((s) => ({ ...s.item, _score: s.score }));
-}
+// export function topNByScore(items, scoreFn, n = 10) {
+//   // compute scores
+//   const scored = items.map((it) => ({ item: it, score: scoreFn(it) }));
+//   scored.sort((a, b) => b.score - a.score);
+//   return scored.slice(0, n).map((s) => ({ ...s.item, _score: s.score }));
+// }
