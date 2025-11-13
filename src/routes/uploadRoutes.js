@@ -1,47 +1,47 @@
-import express from "express";
-import upload from "../middleware/upload.js"; 
-import resumeQueue from "../queues/resumeQueue.js";
-import Resume from "../models/resume.js";
+// import express from "express";
+// import upload from "../middleware/upload.js"; 
+// import resumeQueue from "../queues/resumeQueue.js";
+// import Resume from "../models/resume.js";
 
-const router = express.Router();
-
-
+// const router = express.Router();
 
 
-router.post("/upload", upload.single("resume"), async (req, res) => {
-  try {
-    if (!req.file) {
-      return res.status(400).json({ error: "No file uploaded" });
-    }
 
-    console.log("Uploaded file:", req.file);
 
-    // Construct file URL (for local development)
-    const fileUrl = `/uploads/${req.file.filename}`;
-    //const title = req.file.originalname; // file name as title
+// router.post("/upload", upload.single("resume"), async (req, res) => {
+//   try {
+//     if (!req.file) {
+//       return res.status(400).json({ error: "No file uploaded" });
+//     }
 
-    // Save to DB
-    const newResume = await Resume.create({
-      user: req.user?.id || null, // optional if you have auth middleware
-      title: req.file.originalname, // using filename as title
-      fileUrl: fileUrl,    // required field
-      status: "pending"
-    });
+//     console.log("Uploaded file:", req.file);
 
-    // // Queue analysis job
-    // await resumeQueue.add({ resumeId: newResume._id });
+//     // Construct file URL (for local development)
+//     const fileUrl = `/uploads/${req.file.filename}`;
+//     //const title = req.file.originalname; // file name as title
 
-        // 🧩 Add job to queue
-    await resumeQueue.add("analyzeResume", { resumeId: newResume._id });
+//     // Save to DB
+//     const newResume = await Resume.create({
+//       user: req.user?.id || null, // optional if you have auth middleware
+//       title: req.file.originalname, // using filename as title
+//       fileUrl: fileUrl,    // required field
+//       status: "pending"
+//     });
 
-    res.json({
-      message: "Resume uploaded & queued for analysis",
-      resume: newResume,
-    });
-  } catch (err) {
-    console.error("Upload error:", err);
-    res.status(500).json({ error: "Upload failed" });
-  }
-});
+//     // // Queue analysis job
+//     // await resumeQueue.add({ resumeId: newResume._id });
 
-export default router;
+//         // 🧩 Add job to queue
+//     await resumeQueue.add("analyzeResume", { resumeId: newResume._id });
+
+//     res.json({
+//       message: "Resume uploaded & queued for analysis",
+//       resume: newResume,
+//     });
+//   } catch (err) {
+//     console.error("Upload error:", err);
+//     res.status(500).json({ error: "Upload failed" });
+//   }
+// });
+
+// export default router;

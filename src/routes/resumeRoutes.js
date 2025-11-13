@@ -3,7 +3,8 @@
 import express from "express";
 
 import { createResume, getResumes, updateResume, deleteResume,saveAIResults } from "../controllers/resumeController.js";
-import auth from "../middleware/auth.js";
+import { createResumeFromText } from '../controllers/resumeController.js';
+//import auth from "../middleware/auth.js";
 
 import upload from "../middleware/upload.js";
 import Resume from "../models/resume.js";
@@ -17,11 +18,15 @@ import { recommendByEmbedding } from "../controllers/recommenderEmbedController.
 
 const router = express.Router();
 
-router.post("/", auth, createResume);
-router.get("/", auth, getResumes);
-router.put("/:id", auth, updateResume);
-router.delete("/:id", auth, deleteResume);
-router.patch("/:resumeId/analyze", saveAIResults);
+router.post("/", protect, createResume);
+router.get("/", protect, getResumes);
+router.put("/:id", protect, updateResume);
+router.delete("/:id", protect, deleteResume);
+router.patch("/:resumeId/analyze", protect, saveAIResults);
+
+
+router.post('/create', protect, createResumeFromText);
+
 
 // GET recommendations (cached or computed)
 router.get("/recommendations/:resumeId", protect, getRecommendations);
