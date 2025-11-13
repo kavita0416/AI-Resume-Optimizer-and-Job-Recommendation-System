@@ -1,3 +1,4 @@
+// resumeQueue.js file
 import { Queue } from "bullmq";
 import Redis from "ioredis";
 import dotenv from "dotenv";

@@ -1,3 +1,5 @@
+
+// jobController.js
 import Job from "../models/job.js";
 
 export const ingestJobs = async (req, res) => {

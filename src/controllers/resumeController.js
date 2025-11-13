@@ -1,3 +1,5 @@
+
+//resumeController.js file 
 import Resume from "../models/resume.js";
 import { runAtsAndRecommend } from '../services/resumeProcessor.js';
 
@@ -104,15 +106,30 @@ export const createResumeFromText = async (req, res) => {
 //   }
 // };
 
-// Get All Resumes of Logged-in User
-export const getResumes = async (req, res) => {
+// // Get All Resumes of Logged-in User
+// export const getResumes = async (req, res) => {
+//   try {
+//     const resumes = await Resume.find({ user: req.user.id });
+//     res.json(resumes);
+//   } catch (err) {
+//     res.status(500).json({ error: err.message });
+//   }
+// };
+
+// Get resume by id (protected)
+export const getResumeById = async (req, res) => {
   try {
-    const resumes = await Resume.find({ user: req.user.id });
-    res.json(resumes);
+    const resumeId = req.params.id;
+    const resume = await Resume.findById(resumeId).lean();
+    if (!resume) return res.status(404).json({ message: "Resume not found" });
+    // Optionally verify ownership here: if (String(resume.user) !== String(req.user.id)) return res.status(403)...
+    res.json(resume);
   } catch (err) {
+    console.error("getResumeById error:", err);
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 //Upload Resume 

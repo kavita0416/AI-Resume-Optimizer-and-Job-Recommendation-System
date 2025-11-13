@@ -1,3 +1,4 @@
+// embeddingController.js
 import Job from "../models/job.js";
 
 export const pushEmbeddings = async (req, res) => {

@@ -1,4 +1,4 @@
-
+//userRoutes.js file
 import express from "express";
 import { getUserProfile, updateUserProfile } from "../controllers/usersController.js";
 import auth from "../middleware/auth.js";

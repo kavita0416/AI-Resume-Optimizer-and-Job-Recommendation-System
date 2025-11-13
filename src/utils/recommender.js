@@ -1,3 +1,4 @@
+// recommender.js file
 // simple skill-based recommender (fast, deterministic)
 export function normalizeArray(arr){
   if(!Array.isArray(arr)) return [];

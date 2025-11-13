@@ -1,3 +1,4 @@
+//usersController.js file
 import User from "../models/user.js";
 
 // Get logged-in user profile

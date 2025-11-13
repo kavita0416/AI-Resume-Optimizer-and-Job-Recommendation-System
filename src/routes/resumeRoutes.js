@@ -1,9 +1,10 @@
 
-
+// resumeRoutes.js file
 import express from "express";
 
-import { createResume, getResumes, updateResume, deleteResume,saveAIResults } from "../controllers/resumeController.js";
+import { createResume, updateResume, deleteResume,saveAIResults } from "../controllers/resumeController.js";
 import { createResumeFromText } from '../controllers/resumeController.js';
+import { getResumeById } from "../controllers/resumeController.js";
 //import auth from "../middleware/auth.js";
 
 import upload from "../middleware/upload.js";
@@ -16,10 +17,12 @@ import { getRecommendations } from "../controllers/recommendationController.js";
 import { recommendByEmbedding } from "../controllers/recommenderEmbedController.js";
 
 
+
 const router = express.Router();
 
 router.post("/", protect, createResume);
-router.get("/", protect, getResumes);
+// router.get("/", protect, getResumes);
+router.get("/:id", protect, getResumeById);
 router.put("/:id", protect, updateResume);
 router.delete("/:id", protect, deleteResume);
 router.patch("/:resumeId/analyze", protect, saveAIResults);
