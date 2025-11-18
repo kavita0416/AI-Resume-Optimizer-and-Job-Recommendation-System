@@ -17,7 +17,6 @@ import { getRecommendations } from "../controllers/recommendationController.js";
 import { recommendByEmbedding } from "../controllers/recommenderEmbedController.js";
 
 
-
 const router = express.Router();
 
 router.post("/", protect, createResume);

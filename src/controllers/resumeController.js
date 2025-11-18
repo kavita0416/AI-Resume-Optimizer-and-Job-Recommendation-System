@@ -1,6 +1,7 @@
 
 //resumeController.js file 
 import Resume from "../models/resume.js";
+import resumeQueue from "../queues/resumeQueue.js";
 import { runAtsAndRecommend } from '../services/resumeProcessor.js';
 
 // Create Resume
@@ -13,6 +14,7 @@ export const createResume = async (req, res) => {
     res.status(500).json({ error: err.message });
   }
 };
+
 
 
 // paste this into src/controllers/resumeController.js (replace existing createResumeFromText)
@@ -132,32 +134,37 @@ export const getResumeById = async (req, res) => {
 
 
 
-//Upload Resume 
+
+// Upload Resume 
 export const uploadResume = async (req, res) => {
   try {
     if (!req.file) {
       return res.status(400).json({ error: 'No file uploaded' });
     }
 
+    // Ensure we have a user id from auth middleware
+    const userId = (req.user && (req.user._id || req.user.id)) || undefined;
+
     console.log('Uploaded file:', req.file);
 
-    const newResume = new Resume({
+    const newResume = await Resume.create({
+      user: userId,
       title: req.file.originalname || "Untitled Resume",
-      fileUrl: `uploads/${req.file.filename}`,
-      status: 'pending', // make sure this value exists in your schema enum
+      fileUrl: `/uploads/${req.file.filename}`,
+      status: 'pending',
+      createdAt: new Date()
     });
 
-    await newResume.save();
+    // Add job to queue to process this resume asynchronously
+    // await resumeQueue.add("processResume", { resumeId: String(newResume._id) });
+    await resumeQueue.add("processResume", { resumeId: String(newResume._id) });
 
 
-    // Example save to DB (if needed)
-    // const resume = new ResumeModel({ filePath: req.file.path });
-    // await resume.save();
+
 
     res.status(200).json({
       message: 'Upload successful',
       resume: newResume,
-      //file: req.file.filename
     });
   } catch (error) {
     console.error('Upload Error:', error);

@@ -1,0 +1,163 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Choose Your Resume Template | Effective Resumes</title>
+  <link rel="stylesheet" href="templatestyle.css" />
+  <style>
+    /* Minimal page-specific styling; uses your existing styles.css base */
+    .template-hero {
+      min-height: 40vh;
+      display: grid;
+      place-items: center;
+      text-align: center;
+      padding: 3rem 1rem 1rem;
+      color: #fff;
+      background: linear-gradient(160deg,#2563eb 0%,#3b82f6 40%,#1e3a8a 100%);
+    }
+    .template-hero h1 { font-size: clamp(1.75rem, 2.5vw, 2.5rem); margin: 0; }
+    .template-hero p { opacity:.9; margin-top:.5rem; }
+
+    .template-grid {
+      max-width: 1200px;
+      margin: -4rem auto 4rem;
+      padding: 0 1rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .template-card {
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      border-radius: 18px;
+      backdrop-filter: blur(6px);
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(0,0,0,.25);
+      display: flex; flex-direction: column;
+    }
+    .template-card img {
+      aspect-ratio: 4/5; width: 100%; object-fit: cover; display: block;
+      background: #0f172a;
+    }
+    .template-card .body {
+      padding: 16px 16px 18px;
+      color: black;
+    }
+    .template-card h3 { margin: 0 0 .25rem; color:#fff; font-size:1.05rem; color: black;}
+    .template-card p { margin: 0 0 1rem; opacity:.85; font-size:.92rem;color: black; }
+    .template-actions {
+      display: flex; gap: 10px;
+    }
+    .btn-primary, .btn-outline {
+      width: 100%; border-radius: 10px; padding: 11px 19px; font-weight: 600;
+      border: 1px solid transparent; background: #4f46e5; color: #fff;
+      transition: transform .06s ease, box-shadow .2s ease, background .2s;
+      box-shadow: 0 6px 16px rgba(79,70,229,.35);
+      cursor: pointer;
+      color: black;
+      margin-left: 55px;
+      margin-top: 20px;
+      
+    }
+    .btn-primary:hover { transform: translateY(-1px); }
+    .btn-outline {
+      background: transparent; border-color: rgba(255,255,255,.2);
+      box-shadow: none;
+    }
+    .btn-outline:hover { background: rgba(255,255,255,.08); }
+  </style>
+</head>
+<body>
+
+  <!-- your existing nav from styles.css -->
+   
+  <nav>
+    <div class="nav-content">
+      <div class="nav-logo">EFFECTIVE RESUMES</div>
+      <ul class="nav-links">
+        <li><a href="index.html#home">Home</a></li>
+        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="index.html#contact">Contact Us</a></li>
+        <li><a href="login.html" class="btn-login">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <header class="template-hero">
+    <div>
+      <h1>Choose Your Resume Template</h1>
+      <p>Select a template to start building your resume.</p>
+    </div>
+  </header>
+
+  <main class="template-grid">
+    <!-- Modern -->
+    <article class="template-card">
+      <img src="images/ModernTemplateImage.png" alt="Modern resume template">
+      <div class="body">
+        <h3>Modern Template</h3>
+        <p>Clean, contemporary layout with strong headings.</p>
+        <div class="template-actions">
+            <button class="btn-primary" onclick="openTemplate('resumeTemplate.html')">Use Template</button>
+
+          <!-- <button class="btn-outline" onclick="preview('images/modern-template.png')">Preview</button> -->
+        </div>
+      </div>
+    </article>
+
+    <!-- Professional -->
+    <article class="template-card">
+      <img src="images/ProfessionalTemplateImage.png" alt="Professional resume template">
+      <div class="body">
+        <h3>Professional Template</h3>
+        <p>Business-ready structure for corporate roles.</p>
+        <div class="template-actions">
+         <button class="btn-primary" onclick="openTemplate('resumeTemplate.html')">Use Template</button>
+
+          <!-- <button class="btn-outline" onclick="preview('images/professional-template.png')">Preview</button> -->
+        </div>
+      </div>
+    </article>
+
+    <!-- Simple -->
+    <article class="template-card">
+      <img src="images/SimpleTemplateImage.png" alt="Simple resume template">
+      <div class="body">
+        <h3>Simple Template</h3>
+        <p>Minimal, ATS-friendly, and easy to scan.</p>
+        <div class="template-actions">
+          
+          <button class="btn-primary" onclick="openTemplate('resumeTemplate.html')">Use Template</button>
+
+          
+        </div>
+      </div>
+    </article>
+  </main>
+
+  <footer>
+    &copy; Resume Builder | Make your dream job possible!
+  </footer>
+<script src="/front-config.js"></script>
+
+  <script>
+    // Optional: require login before selecting template
+    // const token = localStorage.getItem("er_token");
+    // if (!token) window.location.href = "login.html";
+
+    function openTemplate(templatePage) {
+      // Save selected template type (if you want to use later)
+      localStorage.setItem("selected_template", templatePage);
+
+      // Redirect to resume builder page (relative)
+      window.location.href = templatePage;
+    }
+
+    function preview(imgPath) {
+      window.open(imgPath, "_blank");
+    }
+  </script>
+</body>
+</html>

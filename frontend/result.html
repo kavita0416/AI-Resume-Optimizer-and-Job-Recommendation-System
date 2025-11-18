@@ -1,0 +1,367 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Resume Analysis & Recommendations</title>
+  <link rel="stylesheet" href="styles.css" />
+  <style>
+    /* Small page-specific styles */
+    main { max-width:1100px; margin:28px auto; padding:16px; color:#0b1220; }
+    .layout { display:grid; grid-template-columns: 1fr 360px; gap:22px; align-items:start; }
+    .previewBox { background:#111317; padding:18px; border-radius:10px; min-height:420px; display:flex; justify-content:center; align-items:center; }
+    .previewBox iframe{ width:100%; height:640px; border:0; background:#fff; border-radius:6px; }
+    .card { background:#0b1220; color:#cfe3ff; padding:14px; border-radius:12px; }
+    .ats-score { font-size:28px; font-weight:800; color:#77ff9c; margin-top:8px; display:block; }
+    .muted { color:#6b7280; }
+    ul.recs { padding-left:18px; margin-top:8px; }
+    .processing { color:#9fb3c8; margin-top:8px; }
+    .link-job { color:#93c5fd; text-decoration:none; }
+    .section-title { font-weight:700; margin-bottom:6px; color:#cfe3ff }
+    .small-muted { font-size:0.9rem; color:#9aa7b8; margin-left:8px; }
+    .btn-main { padding:8px 12px; border-radius:8px; background:#111827; color:#fff; border:0; cursor:pointer; }
+    .btn[disabled] { opacity:0.6; cursor:not-allowed; }
+  </style>
+</head>
+<body>
+  <nav>
+    <div class="nav-content">
+      <div class="nav-logo">EFFECTIVE RESUMES</div>
+      <ul class="nav-links">
+        <li><a href="index.html#home">Home</a></li>
+        <li><a href="index.html#templates">Templates</a></li>
+        <li><a href="index.html#faq">FAQ</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+        <li><a href="login.html" class="btn-login">Login</a></li>
+      </ul>
+    </div>
+  </nav>
+
+  <main>
+    <h1>Resume Analysis & Recommendations</h1>
+    <p class="muted">Preview your uploaded/generated PDF and view ATS score + job matches. This page auto-refreshes until analysis is available.</p>
+
+    <div class="layout">
+      <!-- left: preview iframe -->
+      <div>
+        <div class="section-title">Preview:</div>
+        <div class="previewBox" id="previewBox">
+          <div id="previewPlaceholder" style="color:#cfe3ff;">Loading preview…</div>
+        </div>
+
+        <div style="margin-top:14px;">
+          <button id="downloadBtn" class="btn-main">Download PDF</button>
+          <button id="refreshBtn" class="btn ghost" style="margin-left:10px">Refresh</button>
+          <span id="statusText" style="margin-left:14px;color:#6b7280"></span>
+        </div>
+      </div>
+
+      <!-- right: ATS card + recommendations -->
+      <aside>
+        <div class="card" id="atsCard">
+          <div style="font-weight:700">ATS Score</div>
+          <div class="ats-score" id="atsScore">--</div>
+          <div id="atsNote" class="processing">Analyzing your resume…</div>
+          <ul id="atsSuggestions" style="margin-top:8px"></ul>
+        </div>
+
+        <div style="margin-top:18px;">
+          <div class="section-title">Recommended Jobs</div>
+          <ul id="recList" class="recs"></ul>
+        </div>
+      </aside>
+    </div>
+  </main>
+
+<script>
+/* Results page script:
+   - Reads resumeId from ?resumeId=... or localStorage.uploaded_resume_id
+   - Renders preview (prefers cached resume_<id>_fileUrl)
+   - Polls /api/resumes/:id for analysis and updates ATS UI
+   - Loads recommended jobs (tries embed endpoint then fallback)
+   - Download button fetches the file and triggers download
+*/
+
+(async function () {
+  // helpers from front-config may already exist on the page,
+  // but we defensively fall back to constructing things from location.
+  const API_BASE = window.ER_API || window.API_BASE || `${location.protocol}//${location.hostname}:${location.port || 5000}`;
+  const buildApiUrl = window.buildApiUrl || (p => (p && /^https?:\/\//i.test(p) ? p : `${API_BASE}${p.startsWith('/') ? '' : '/'}${p}`));
+  const normalizeFileUrl = window.normalizeFileUrl || (v => v ? String(v) : null);
+  const erFetch = window.erFetch || (async (path, opts)=> fetch(buildApiUrl(path), opts));
+
+  function getQueryParam(name) {
+    return new URLSearchParams(window.location.search).get(name);
+  }
+
+  function setStatusText(msg, color) {
+    const el = document.getElementById('statusText');
+    if (!el) return;
+    el.textContent = msg || '';
+    el.style.color = color || '';
+  }
+
+  function safeParse(v) {
+    try { return JSON.parse(v); } catch(e) { return v; }
+  }
+
+  // read resumeId from query or fallback to localStorage
+  let resumeId = getQueryParam('resumeId') || localStorage.getItem('uploaded_resume_id');
+  if (!resumeId) {
+    // nothing to show
+    document.getElementById('previewPlaceholder').textContent = 'No resume specified. Please upload or generate a resume first.';
+    setStatusText('');
+    return;
+  }
+
+  // show "loading preview"
+  setStatusText('Loading preview…');
+  document.getElementById('previewPlaceholder').textContent = 'Loading preview…';
+
+  // try reading cached fileUrl first
+  const cached = localStorage.getItem(`resume_${resumeId}_fileUrl`);
+  let fileUrl = normalizeFileUrl(safeParse(cached) || cached);
+
+  // helper to compute iframe src from fileUrl (prefix API_BASE for relative paths)
+  function fileUrlToSrc(u) {
+    if (!u) return null;
+    if (/^https?:\/\//i.test(u)) return u;
+    // relative path (e.g. /uploads/xxx.pdf) — build full URL with API_BASE
+    return buildApiUrl(u.startsWith('/') ? u : `/${u}`);
+  }
+
+  // set iframe preview
+  function setPreviewIframe(src) {
+    const box = document.getElementById('previewBox');
+    box.innerHTML = '';
+    const iframe = document.createElement('iframe');
+    iframe.src = src;
+    iframe.title = 'Resume preview';
+    box.appendChild(iframe);
+  }
+
+  // fallback: fetch resume info from API to find file URL
+  async function fetchResumeMeta(id) {
+    try {
+      const resp = await erFetch(`/api/resumes/${id}`, { method: 'GET' });
+      if (!resp.ok) return null;
+      const json = await resp.json().catch(()=>null);
+      return json || null;
+    } catch (e) {
+      console.warn('fetchResumeMeta error', e);
+      return null;
+    }
+  }
+
+  // initial preview setup
+  if (fileUrl) {
+    try {
+      setPreviewIframe(fileUrlToSrc(fileUrl));
+      setStatusText('Preview loaded (cached)', '#6b7280');
+    } catch (e) {
+      console.warn('failed to set preview from cache', e);
+      fileUrl = null;
+    }
+  }
+
+  if (!fileUrl) {
+    // try server meta
+    const meta = await fetchResumeMeta(resumeId);
+    if (meta) {
+      // server may return fileUrl, file, or url fields
+      fileUrl = normalizeFileUrl(meta.fileUrl || meta.file || meta.url || (meta.resume && (meta.resume.fileUrl || meta.resume.file)));
+      if (fileUrl) {
+        localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(fileUrl));
+        setPreviewIframe(fileUrlToSrc(fileUrl));
+        setStatusText('Preview loaded (from server)', '#6b7280');
+      } else {
+        document.getElementById('previewPlaceholder').textContent = 'No preview available.';
+        setStatusText('');
+      }
+    } else {
+      document.getElementById('previewPlaceholder').textContent = 'Preview unavailable — server did not return file information.';
+      setStatusText('');
+    }
+  }
+
+  // Poll for ATS/analysis and update UI
+  let polling = false;
+  let pollAbort = false;
+  async function pollAnalysis({ intervalMs = 3000, maxTries = 40 } = {}) {
+    if (polling) return;
+    polling = true;
+    const atsScoreEl = document.getElementById('atsScore');
+    const atsNoteEl = document.getElementById('atsNote');
+    const atsSugEl = document.getElementById('atsSuggestions');
+
+    let tries = 0;
+    atsNoteEl.textContent = 'Analyzing your resume…';
+    while (tries++ < maxTries && !pollAbort) {
+      try {
+        const resp = await erFetch(`/api/resumes/${resumeId}`, { method: 'GET' });
+        if (!resp.ok) {
+          // either not ready or error; wait and continue
+          // if 404, break
+          if (resp.status === 404) {
+            atsNoteEl.textContent = 'Resume not found on server.';
+            break;
+          }
+          await new Promise(r => setTimeout(r, intervalMs));
+          continue;
+        }
+        const data = await resp.json().catch(()=>null);
+        if (!data) { await new Promise(r => setTimeout(r, intervalMs)); continue; }
+
+        // prefer data.analysis or data.atsScore
+        const analysis = data.analysis || (data.atsScore !== undefined ? { score: data.atsScore, suggestions: data.suggestions || [] } : null);
+        if (analysis && (Object.keys(analysis).length > 0 || analysis.score !== undefined)) {
+          atsScoreEl.textContent = typeof analysis.score === 'number' ? String(analysis.score) : (analysis.score ?? '--');
+          atsNoteEl.textContent = 'Analysis complete.';
+          atsSugEl.innerHTML = (analysis.suggestions || []).map(s => `<li>${s}</li>`).join('') || '<li>No suggestions</li>';
+          // cache analysis for speed if not cached already
+          localStorage.setItem(`resume_${resumeId}_analysis`, JSON.stringify(analysis));
+          polling = false;
+          return data;
+        }
+
+        if (data.status === 'failed') {
+          atsNoteEl.textContent = 'Analysis failed.';
+          polling = false;
+          return data;
+        }
+
+        // still pending
+        atsNoteEl.textContent = 'Analysis in progress…';
+      } catch (err) {
+        console.warn('pollAnalysis error', err);
+      }
+      await new Promise(r => setTimeout(r, intervalMs));
+    }
+
+    if (!pollAbort) {
+      atsNoteEl.textContent = 'Still processing. Try Refresh in a few seconds.';
+    }
+    polling = false;
+    return null;
+  }
+
+  // load cached analysis if present immediately
+  const cachedAnalysis = safeParse(localStorage.getItem(`resume_${resumeId}_analysis`));
+  if (cachedAnalysis) {
+    document.getElementById('atsScore').textContent = typeof cachedAnalysis.score === 'number' ? String(cachedAnalysis.score) : (cachedAnalysis.score ?? '--');
+    document.getElementById('atsNote').textContent = 'Analysis (cached)';
+    document.getElementById('atsSuggestions').innerHTML = (cachedAnalysis.suggestions || []).map(s => `<li>${s}</li>`).join('');
+  } else {
+    // start polling in background
+    pollAnalysis().catch(e => console.warn(e));
+  }
+
+  // Recommended jobs loader
+  async function loadRecommendations() {
+    const recList = document.getElementById('recList');
+    recList.innerHTML = '<li class="muted">Loading recommendations…</li>';
+    // try embed endpoint first
+    try {
+      let res = await erFetch(`/api/resumes/recommendations/embed/${resumeId}?limit=8`, { method: 'GET' });
+      let json = null;
+      if (res.ok) json = await res.json().catch(()=>null);
+      if (!res.ok || !json || !json.recommendations || json.recommendations.length === 0) {
+        // fallback to non-embed endpoint
+        res = await erFetch(`/api/resumes/recommendations/${resumeId}?limit=8`, { method: 'GET' });
+        json = res.ok ? await res.json().catch(()=>null) : null;
+      }
+      const recs = (json && (json.recommendations || json.data || json)) || [];
+      if (recs.length === 0) {
+        recList.innerHTML = '<li class="muted">No recommendations found.</li>';
+        return;
+      }
+      recList.innerHTML = '';
+      recs.forEach(r => {
+        const li = document.createElement('li');
+        const a = document.createElement('a');
+        a.href = r.url || '#';
+        a.target = '_blank';
+        a.rel = 'noopener';
+        a.className = 'link-job';
+        const score = (typeof r.score === 'number') ? ` — ${r.score.toFixed(2)}` : '';
+        a.textContent = `${r.title || 'Job'} ${r.company ? ' @ ' + r.company : ''}${score}`;
+        li.appendChild(a);
+        recList.appendChild(li);
+      });
+    } catch (e) {
+      console.warn('loadRecommendations error', e);
+      recList.innerHTML = '<li class="muted">Unable to load recommendations.</li>';
+    }
+  }
+
+  // Call recommendations loader (don't block)
+  loadRecommendations();
+
+  // Download handler (downloads the resolved fileUrl or fetches from API)
+  document.getElementById('downloadBtn').addEventListener('click', async function () {
+    const btn = this;
+    btn.disabled = true;
+    setStatusText('Preparing download…');
+    try {
+      // prefer cached fileUrl
+      let f = fileUrl;
+      if (!f) {
+        const meta = await fetchResumeMeta(resumeId);
+        f = normalizeFileUrl(meta?.fileUrl || meta?.file || meta?.url);
+      }
+      if (!f) throw new Error('No file available to download.');
+
+      const src = fileUrlToSrc(f);
+      // If src is same-origin we can fetch blob, else just open in new tab
+      const sameOrigin = src.startsWith(location.origin);
+      if (!sameOrigin) {
+        // open in new tab (browser will download or show PDF)
+        window.open(src, '_blank', 'noopener');
+        setStatusText('Opened in new tab', '#6b7280');
+      } else {
+        // fetch blob then create link to download
+        const resp = await fetch(src, { method: 'GET' });
+        if (!resp.ok) throw new Error('Download failed');
+        const blob = await resp.blob();
+        const a = document.createElement('a');
+        const url = URL.createObjectURL(blob);
+        a.href = url;
+        a.download = `resume-${resumeId}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        URL.revokeObjectURL(url);
+        setStatusText('Downloaded', '#6b7280');
+      }
+    } catch (err) {
+      console.error('download error', err);
+      setStatusText('Download failed', 'red');
+      alert('Download failed: ' + (err.message || err));
+    } finally {
+      btn.disabled = false;
+    }
+  });
+
+  // Refresh button re-triggers fetch + poll
+  document.getElementById('refreshBtn').addEventListener('click', async function () {
+    setStatusText('Refreshing…');
+    // try re-fetch meta and preview
+    const meta = await fetchResumeMeta(resumeId);
+    let newFile = normalizeFileUrl(meta?.fileUrl || meta?.file || meta?.url);
+    if (newFile) {
+      localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(newFile));
+      fileUrl = newFile;
+      setPreviewIframe(fileUrlToSrc(fileUrl));
+      setStatusText('Preview updated', '#6b7280');
+    }
+    // re-run polling
+    pollAnalysis().catch(e => console.warn(e));
+    // refresh recommendations too
+    loadRecommendations();
+  });
+
+})();
+</script>
+
+</body>
+</html>

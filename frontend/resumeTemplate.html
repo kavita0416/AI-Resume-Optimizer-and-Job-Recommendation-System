@@ -1,0 +1,288 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Professional Resume Builder — A4 Export</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Lato:wght@300;400;700;900&family=Merriweather:ital,wght@0,700;0,900;1,700&display=swap" rel="stylesheet">
+
+  <!-- Use absolute path so Express serves the CSS reliably -->
+  <link rel="stylesheet" href="resume_style.css" />
+
+  <!-- Libraries -->
+  <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    /* small helper to keep layout neat if resume_style missing during dev */
+    .generated-preview-iframe { width:100%; height:600px; border:0; border-radius:6px; background:#fff; }
+    #generatedPdfPreview h3 { margin:8px 0; font-size:1.05rem; }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <header class="topbar">
+      <h1>Professional Resume Builder</h1>
+      <p class="muted">Fill the form on the left — preview (A4) on the right. Click <strong>Save & Analyze → PDF</strong> to upload and analyze a printable A4 PDF.</p>
+    </header>
+
+    <section class="editor">
+      <aside class="form-panel">
+        <h2>Fill details</h2>
+
+        <label>Full name
+          <input id="fullName" type="text" placeholder="Jane Doe" />
+        </label>
+
+        <label>Job title
+          <input id="title" type="text" placeholder="Senior Product Designer" />
+        </label>
+
+        <label>Location / Contact (one line)
+          <input id="contact" type="text" placeholder="City, Country · email@example.com · +1 555 555 555" />
+        </label>
+
+        <label>Professional summary
+          <textarea id="summary" rows="4" placeholder="Short 2–3 sentence professional summary"></textarea>
+        </label>
+
+        <fieldset class="block">
+          <legend>Experience</legend>
+          <div id="experienceList"></div>
+          <button id="addExperience" class="btn small">+ Add experience</button>
+        </fieldset>
+
+        <fieldset class="block">
+          <legend>Education</legend>
+          <div id="educationList"></div>
+          <button id="addEducation" class="btn small">+ Add education</button>
+        </fieldset>
+
+        <fieldset class="block">
+          <legend>Internships</legend>
+          <div id="internshipList"></div>
+          <button id="addInternship" class="btn small">+ Add internship</button>
+        </fieldset>
+
+        <fieldset class="block">
+          <legend>Projects</legend>
+          <div id="projectList"></div>
+          <button id="addProject" class="btn small">+ Add project</button>
+        </fieldset>
+
+        <fieldset class="block">
+          <legend>Certificates</legend>
+          <div id="certificateList"></div>
+          <button id="addCertificate" class="btn small">+ Add certificate</button>
+        </fieldset>
+
+        <label>Soft skills (comma separated)
+          <input id="softSkills" type="text" placeholder="Communication, Leadership, Time management" />
+        </label>
+
+        <fieldset class="block">
+          <legend>Extra activities</legend>
+          <div id="extraList"></div>
+          <button id="addExtra" class="btn small">+ Add activity</button>
+        </fieldset>
+
+        <div class="block">
+            <label style="display:block;margin-bottom:8px;">Skills (add one and click Add)</label>
+            <div style="display:flex;gap:8px;align-items:center;">
+                <input id="skillInput" type="text" placeholder="Type a skill (e.g. Figma)" style="flex:1;padding:8px;border-radius:8px;border:1px solid #e6eef9;" />
+                <button id="addSkillBtn" class="btn small">Add</button>
+            </div>
+            <div id="skillList" style="margin-top:10px;display:flex;flex-wrap:wrap;gap:8px;"></div>
+        </div>
+
+        <div class="actions">
+          <button id="saveAnalyze" type="button" class="btn primary">Save & Analyze → PDF (A4)</button>
+
+          <button id="downloadPNG" class="btn">Download PNG</button>
+          <button id="clearData" class="btn ghost">Clear</button>
+        </div>
+
+        <section id="analysis" class="analysis" aria-live="polite" hidden>
+          <h3>Analysis</h3>
+          <ul id="analysisList"></ul>
+        </section>
+
+        <!-- PDF Preview Container (shown after generation) -->
+        <div id="generatedPdfPreview"></div>
+
+        <!-- ATS Card (visible post-upload or if analysis cached) -->
+        <div id="atsCard" class="ats-card" style="display:none; margin-top:20px;">
+          <div class="ats-row">
+            <div class="ats-title">ATS Score</div>
+            <div class="ats-score" id="atsScore">--</div>
+          </div>
+          <div class="ats-sub" id="atsNote">Analyzing…</div>
+          <ul class="ats-suggestions" id="atsSuggestions"></ul>
+        </div>
+
+        <!-- Recommended Jobs Button -->
+        <div class="recommend-btn-container" id="recommendJobsBox" style="display:none; margin-top:20px;">
+          <button id="recommendBtn" class="btn primary">Recommended Jobs →</button>
+        </div>
+
+      </aside>
+
+      <section class="preview-panel">
+        <h2>Preview (A4)</h2>
+
+        <div id="previewWrapper" class="preview a4">
+          <article id="resumePreview" class="resume">
+            <div class="resume-inner">
+              <aside class="left-col">
+                <div class="avatar-placeholder" id="pv-avatar">JD</div>
+                <div class="contact" id="pv-contact">City · email@example.com</div>
+
+                <div class="section sidebar-section">
+                  <h4>Skills</h4>
+                  <div id="pv-skills" class="skills"></div>
+                </div>
+
+                <div class="section sidebar-section">
+                  <h4>Languages</h4>
+                  <div class="muted small">English (Fluent)</div>
+                </div>
+              </aside>
+
+              <div class="right-col">
+                <header class="heading">
+                  <div class="pv-name" id="pv-name">Your Name</div>
+                  <div class="pv-title" id="pv-title">Job Title</div>
+                </header>
+
+                <div id="main-content">
+                  <section class="section" id="profile-section">
+                    <h4>Profile</h4>
+                    <p id="pv-summary">A concise professional summary will appear here.</p>
+                  </section>
+
+                  <section class="section" id="experience-section">
+                    <h4>Experience</h4>
+                    <div id="pv-experience"></div>
+                  </section>
+
+                  <section class="section" id="internship-section">
+                    <h4>Internships</h4>
+                    <div id="pv-internships"></div>
+                  </section>
+
+                  <section class="section" id="project-section">
+                    <h4>Projects</h4>
+                    <div id="pv-projects"></div>
+                  </section>
+
+                  <section class="section" id="certificate-section">
+                    <h4>Certifications</h4>
+                    <div id="pv-certificates"></div>
+                  </section>
+
+                  <section class="section" id="softskills-section">
+                    <h4>Soft skills</h4>
+                    <div id="pv-softskills" class="skills"></div>
+                  </section>
+
+                  <section class="section" id="extra-section">
+                    <h4>Extra activities</h4>
+                    <div id="pv-extras"></div>
+                  </section>
+
+                  <section class="section" id="education-section">
+                    <h4>Education</h4>
+                    <div id="pv-education"></div>
+                  </section>
+                </div>
+              </div>
+            </div>
+          </article>
+        </div>
+
+        <p class="hint muted small">Tip: use Chrome and export the downloaded PDF at 100% scale / actual size for best fidelity.</p>
+      </section>
+    </section>
+  </main>
+
+  <!-- Your client scripts -->
+  <script src="resume_script.js"></script>
+  <script src="/front-config.js"></script>
+
+  <script>
+document.getElementById("saveAnalyze").addEventListener("click", () => {
+  window.location.href = "result.html";
+});
+
+</script>
+
+
+  <script>
+  
+  function getAuth() {
+    return window.getAuth ? window.getAuth() : { token: localStorage.getItem("er_token") };
+  }
+
+  /* DOM -> PDF blob (same as you used) */
+  async function domToPdfBlob(element) {
+    if (!element) throw new Error("Preview element not found");
+    const scale = 2;
+    const canvas = await html2canvas(element, {
+      scale,
+      useCORS: true,
+      backgroundColor: "#fff",
+      scrollY: -window.scrollY
+    });
+
+    const imgData = canvas.toDataURL("image/png");
+    const { jsPDF } = window.jspdf;
+    const pdf = new jsPDF({ unit: "mm", format: "a4" });
+
+    const pxToMm = 25.4 / 96;
+    const imgWidthMm = canvas.width * pxToMm;
+    const imgHeightMm = canvas.height * pxToMm;
+
+    const pageW = 210, pageH = 297, margin = 10;
+    const usableW = pageW - margin * 2;
+    const usableH = pageH - margin * 2;
+    const scaleFactor = Math.min(usableW / imgWidthMm, usableH / imgHeightMm, 1);
+
+    const x = (pageW - imgWidthMm * scaleFactor) / 2;
+    const y = (pageH - imgHeightMm * scaleFactor) / 2;
+
+    pdf.addImage(imgData, "PNG", x, y, imgWidthMm * scaleFactor, imgHeightMm * scaleFactor, undefined, "FAST");
+    return pdf.output("blob");
+  }
+
+  // Optional: downloadPNG and clearData basic handlers (non-critical)
+  document.getElementById('downloadPNG')?.addEventListener('click', async () => {
+    try {
+      if (typeof renderPreview === 'function') renderPreview();
+      const el = document.getElementById('resumePreview');
+      const canvas = await html2canvas(el, { scale: 2, useCORS: true });
+      const link = document.createElement('a');
+      link.href = canvas.toDataURL('image/png');
+      link.download = `resume-${Date.now()}.png`;
+      document.body.appendChild(link); link.click(); link.remove();
+    } catch (e) {
+      console.warn('PNG download failed', e); alert('PNG export failed: ' + e.message);
+    }
+  });
+
+  document.getElementById('clearData')?.addEventListener('click', () => {
+    if (!confirm('Clear resume form and preview?')) return;
+    // clear a few fields (extend as needed)
+    document.getElementById('fullName').value = '';
+    document.getElementById('title').value = '';
+    document.getElementById('contact').value = '';
+    document.getElementById('summary').value = '';
+    // reset preview elements (you likely have a renderPreview function that reads values)
+    if (typeof renderPreview === 'function') renderPreview();
+  });
+
+  </script>
+
+</body>
+</html>

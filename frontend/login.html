@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login | Effective Resumes</title>
+
+  <link rel="stylesheet" href="styles.css">
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet"/>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+</head>
+<body>
+
+<nav>
+  <div class="nav-content">
+    <div class="nav-logo">EFFECTIVE RESUMES</div>
+    <ul class="nav-links">
+      <li><a href="index.html#home">Home</a></li>
+      <li><a href="index.html#templates">Templates</a></li>
+      <li><a href="index.html#faq">FAQ</a></li>
+      <li><a href="index.html#contact">Contact Us</a></li>
+      <li><a href="login.html" class="btn-login">Login</a></li>
+    </ul>
+  </div>
+</nav>
+
+<main class="login-main">
+  <div class="login-container">
+    <h2>Login</h2>
+    <form class="login-form">
+      <div class="input-wrap">
+        <i class="fa fa-envelope"></i>
+        <input type="email" name="email" required placeholder="Email Address" autocomplete="email"/>
+      </div>
+
+      <div class="input-wrap">
+        <i class="fa fa-lock"></i>
+        <input type="password" name="password" required placeholder="Password" autocomplete="current-password"/>
+      </div>
+
+      <button type="submit">Login</button>
+
+      <div class="login-actions">
+        <a href="#" class="forgot-link">Forgot password?</a>
+        <span>|</span>
+        <a href="register.html" class="register-link">Register</a>
+      </div>
+    </form>
+  </div>
+</main>
+
+<footer>
+  &copy; Resume Builder | Make your dream job possible!
+</footer>
+
+<!-- Load backend config BEFORE login script -->
+<script src="/front-config.js"></script>
+
+<script>
+/* ---------------------------------------------------------
+   LOGIN PAGE (now using global ER_API + erFetch + getAuth)
+--------------------------------------------------------- */
+(function() {
+  const API = window.ER_API;  // provided by front-config.js
+  console.log("Login using API:", API);
+
+  const form = document.querySelector(".login-form");
+  if (!form) return console.warn("Login form not found.");
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+
+    const fd = new FormData(form);
+    const payload = {
+      email: fd.get("email"),
+      password: fd.get("password")
+    };
+
+    try {
+      // Use erFetch which adds Authorization automatically if token exists
+      const res = await erFetch("/api/auth/login", {
+        method: "POST",
+        body: JSON.stringify(payload),
+        headers: { "Content-Type": "application/json" }
+      });
+
+      const data = await res.json().catch(() => null);
+
+      if (!res.ok) {
+        const msg = data?.message || data?.error || "Login failed";
+        throw new Error(msg);
+      }
+
+      // Save session
+      localStorage.setItem("er_token", data.token);
+      localStorage.setItem("er_user", JSON.stringify(data.user));
+
+      // Redirect to templates section
+      window.location.href = "index.html#templates";
+
+    } catch (err) {
+      console.error("Login error:", err);
+      alert("Login failed: " + (err.message || "Unknown error"));
+    }
+  });
+})();
+</script>
+
+</body>
+</html>

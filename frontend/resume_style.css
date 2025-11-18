@@ -1,0 +1,130 @@
+/* Professional two-column printable resume style (A4) */
+:root{
+  --bg:#f3f6f9;
+  --card:#ffffff;
+  --muted:#6b7280;
+  --accent:#0a66c2;
+  --accent-2:#1f2937;
+  --text:#0f1724;
+  --pad:18px;
+  --left-width:33%;
+  --right-width:67%;
+  --resume-bg:#ffffff;
+}
+
+/* Basic page and layout */
+*{box-sizing:border-box}
+html,body{height:100%}
+body{
+  font-family: 'Lato', system-ui, -apple-system, 'Segoe UI', Roboto, Arial;
+  margin:0;background:var(--bg);
+  -webkit-font-smoothing:antialiased;padding:28px;
+  color:var(--text);
+}
+
+.container{max-width:1200px;margin:0 auto}
+.topbar h1{margin:0;font-weight:700;font-size:20px}
+.topbar .muted{color:var(--muted);margin-top:6px;font-size:13px}
+
+/* Editor layout */
+.editor{display:flex;gap:20px;margin-top:18px}
+.form-panel{flex:1;background:var(--card);padding:18px;border-radius:10px;box-shadow:0 6px 20px rgba(12,16,20,0.05)}
+.preview-panel{width:480px;min-width:480px}
+.preview-panel .resume{border-radius:8px}
+
+/* Form inputs */
+label{display:block;margin-bottom:10px;font-size:20px}
+input[type="text"], textarea{
+  width:100%;padding:10px;border-radius:8px;border:1px solid #e6eef9;font-size:14px;margin-top:6px;background:#fff;
+  outline:none;
+}
+textarea{resize:vertical}
+.block{margin-top:12px;padding:10px;border-radius:8px;border:1px dashed #e6eef9;background:#fbfdff}
+.btn{padding:8px 12px;border-radius:8px;border:1px solid #e6eef9;background:#fff;cursor:pointer;font-weight:700}
+.btn.small{padding:6px 8px;font-size:13px}
+.btn.primary{background:var(--accent);color:white;border:none}
+.btn.ghost{background:transparent;border:1px solid #e2e8f0}
+.actions{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+.muted{color:var(--muted)}
+
+.analysis{margin-top:12px;padding:10px;border-radius:8px;background:#fff9e6;border:1px solid #f5e6b8}
+
+/* --- Resume (A4-proportioned on screen) --- */
+/* A4 at 96dpi: 210mm × 297mm -> ~794px × 1123px */
+.preview.a4{
+  width: 794px;
+  height: 1123px;
+  padding:22px;
+}
+.resume{width:100%;height:100%;background:#fff;border:1px solid #e6eef9;padding:0;border-radius:6px;overflow:hidden}
+.resume-inner{display:flex;gap:20px;height:100%}
+.left-col{
+  width: calc(var(--left-width));
+  padding:16px;background:#f8fbff;border-radius:6px;
+  display:flex;flex-direction:column;align-items:flex-start;
+}
+.right-col{width: calc(var(--right-width));padding:6px 6px 6px 0;overflow:auto;display:flex;flex-direction:column}
+
+/* Avatar and contact */
+.avatar-placeholder{
+  width:74px;height:74px;border-radius:8px;background:linear-gradient(180deg,#0a66c2,#094a9a);
+  display:flex;align-items:center;justify-content:center;color:white;font-weight:900;font-size:22px;margin-bottom:12px;
+}
+.contact{font-size:13px;color:var(--muted);margin-bottom:12px}
+
+/* Sidebar sections */
+.sidebar-section{margin-top:12px;border-top:1px solid rgba(14,20,30,0.04);padding-top:10px;width:100%}
+.sidebar-section h4{margin:0 0 8px 0;font-family:'Merriweather', serif;font-weight:700;color:var(--accent-2);
+font-size: 18px;}
+.skills{display:flex;flex-wrap:wrap;gap:8px}
+.skill-pill{background:#fff;border:1px solid #e8f0fb;padding:6px 8px;border-radius:999px;font-size:12px;color:#0f1724}
+
+/* Main headings */
+.heading{margin-bottom:6px}
+.pv-name{font-family:'Merriweather',serif;font-weight:900;font-size:28px;color:var(--accent-2)}
+.pv-title{color:var(--accent);font-weight:700;margin-top:6px;font-size:14px}
+
+/* Sections */
+.section{margin-top:14px}
+.section h4{margin:0 0 8px 0;font-family:'Merriweather',serif;font-weight:700;color:var(--accent-2);font-size:18px}
+.section p{margin:0;color:#334155;line-height:1.5}
+.exp-item{margin-bottom:12px}
+.exp-item .role{font-weight:700;font-size:14px}
+.exp-item .meta{font-size:12px;color:var(--muted);margin-top:2px}
+.exp-item .desc{font-size:13px;color:#253244;margin-top:6px}
+
+/* New section item styles */
+.intern-item, .project-item, .cert-item, .extra-item { margin-bottom: 10px; }
+.intern-item .role, .project-item .title, .cert-item .title, .extra-item .title { font-weight:700; font-size:13px; }
+.intern-item .meta, .project-item .meta, .cert-item .meta, .extra-item .meta { color:var(--muted); font-size:12px; margin-top:4px; }
+.project-item .desc, .intern-item .desc, .extra-item .desc { margin-top:6px; font-size:13px; color:#253244; }
+
+.soft-skill-pill { display:inline-block; margin:4px 8px 0 0; padding:6px 8px; border-radius:999px; border:1px solid #e6eef9; background:#fff; font-size:12px; color:#0f1724; }
+
+/* helpers */
+.small{font-size:12px}
+.hint{margin-top:10px;color:var(--muted)}
+
+/* responsive */
+@media (max-width:980px){
+  .editor{flex-direction:column}
+  .preview-panel{width:auto;min-width:auto}
+  .preview.a4{width:100%;height:auto}
+  .resume-inner{flex-direction:column}
+  .left-col{display:block;width:100%}
+}
+
+
+/* Skill pills in the left form */
+.skill-tag {
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding:6px 8px;
+  background:#fff;
+  border:1px solid #e6eef9;
+  border-radius:999px;
+  font-size:13px;
+  color:#0f1724;
+}
+.skill-tag button { background:transparent;border:none;color:#888;cursor:pointer;font-weight:700;padding:0 6px; }

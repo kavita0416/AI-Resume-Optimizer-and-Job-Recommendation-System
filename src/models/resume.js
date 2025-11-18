@@ -1,13 +1,14 @@
 //resume.js file
 import mongoose from "mongoose";
 
+
 const resumeSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
     fileUrl: { type: String, required: true }, // local path or S3 URL
      status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending","completed", "approved", "rejected"],
       default: "pending",
     },
     analysis: { type: Object }, // store AI results

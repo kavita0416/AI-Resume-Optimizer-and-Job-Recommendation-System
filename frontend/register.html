@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Register | Effective Resumes</title>
+
+    <link rel="stylesheet" href="styles.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@500;700&display=swap" rel="stylesheet"/>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+</head>
+<body>
+
+<nav>
+    <div class="nav-content">
+        <div class="nav-logo">EFFECTIVE RESUMES</div>
+        <ul class="nav-links">
+            <li><a href="index.html#home">Home</a></li>
+            <li><a href="index.html#templates">Templates</a></li>
+            <li><a href="index.html#faq">FAQ</a></li>
+            <li><a href="index.html#contact">Contact Us</a></li>
+            <li><a href="login.html" class="btn-login">Login</a></li>
+        </ul>
+    </div>
+</nav>
+
+<main class="register-main">
+    <div class="stylish-login-container stylish-register-container">
+        <h2><i class="fa fa-user-plus"></i> Create Account</h2>
+
+        <form id="registerForm" class="stylish-login-form" autocomplete="off">
+
+            <div class="input-wrap">
+                <i class="fa fa-user"></i>
+                <input type="text" name="fullname" required placeholder="Full Name" autocomplete="name" />
+            </div>
+
+            <div class="input-wrap">
+                <i class="fa fa-envelope"></i>
+                <input type="email" name="email" required placeholder="Email Address" autocomplete="email" />
+            </div>
+
+            <div class="input-wrap">
+                <i class="fa fa-phone"></i>
+                <input type="tel" name="phone" required placeholder="Phone Number" maxlength="10" pattern="[0-9]{10}" autocomplete="tel" />
+            </div>
+
+            <div class="input-wrap">
+                <i class="fa fa-lock"></i>
+                <input type="password" name="password" required placeholder="Password (min 8 chars)" minlength="8" autocomplete="new-password" />
+            </div>
+
+            <div class="input-wrap">
+                <i class="fa fa-lock"></i>
+                <input type="password" name="confirm-password" required placeholder="Confirm Password" minlength="8" autocomplete="new-password" />
+            </div>
+
+            <button type="submit">
+                <i class="fa fa-user-plus"></i> Register
+            </button>
+
+            <div class="login-actions">
+                <a href="login.html" class="login-link">Already have an account? Login</a>
+            </div>
+
+        </form>
+    </div>
+</main>
+
+<footer>
+    &copy; Resume Builder | Make your dream job possible!
+</footer>
+
+<!-- Load your global config -->
+<script src="/front-config.js"></script>
+
+<script>
+/* ---------------------------------------------------------
+   REGISTER PAGE — using ER_API + erFetch from front-config.js
+--------------------------------------------------------- */
+(function () {
+    const API = window.ER_API;       // provided by front-config.js
+    console.log("Register using API:", API);
+
+    const form = document.getElementById("registerForm");
+    if (!form) return console.warn("Register form missing");
+
+    form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+
+        const fd = new FormData(form);
+        const password = fd.get("password");
+        const confirm = fd.get("confirm-password");
+
+        if (password !== confirm) {
+            alert("Passwords do not match");
+            return;
+        }
+
+        const payload = {
+            name: fd.get("fullname"),
+            email: fd.get("email"),
+            password
+        };
+
+        try {
+            /* -------------------------
+               1) REGISTER USER
+            ------------------------- */
+            const reg = await erFetch("/api/auth/register", {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+
+            const regData = await reg.json().catch(() => null);
+            if (!reg.ok) {
+                const msg = regData?.message || regData?.error || "Registration failed";
+                throw new Error(msg);
+            }
+
+            /* -------------------------
+               2) AUTO LOGIN USER
+            ------------------------- */
+            const loginRes = await erFetch("/api/auth/login", {
+                method: "POST",
+                body: JSON.stringify({
+                    email: payload.email,
+                    password
+                })
+            });
+
+            const loginData = await loginRes.json().catch(() => null);
+            if (!loginRes.ok) {
+                const msg = loginData?.message || loginData?.error || "Auto-login failed";
+                throw new Error(msg);
+            }
+
+            /* -------------------------
+               3) SAVE SESSION
+            ------------------------- */
+            localStorage.setItem("er_token", loginData.token);
+            localStorage.setItem("er_user", JSON.stringify(loginData.user));
+
+            /* -------------------------
+               4) REDIRECT TO TEMPLATES
+            ------------------------- */
+            window.location.href = "index.html#templates";
+
+        } catch (err) {
+            console.error("Registration error:", err);
+            alert("Registration failed: " + (err.message || "Unknown error"));
+        }
+    });
+})();
+</script>
+
+</body>
+</html>
