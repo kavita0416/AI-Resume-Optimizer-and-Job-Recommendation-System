@@ -25,13 +25,7 @@
     };
   };
 
-  /**
-   * window.erFetch(pathOrUrl, opts)
-   * - If pathOrUrl is an absolute URL, it fetches that URL.
-   * - If pathOrUrl is a path (starts without http), it prepends window.ER_API.
-   * - Automatically attaches Authorization header if er_token exists.
-   * - Leaves Content-Type alone when body is FormData.
-   */
+  
   window.erFetch = window.erFetch || async function (pathOrUrl, opts = {}) {
     opts = Object.assign({}, opts); // shallow copy to avoid mutating callers
 

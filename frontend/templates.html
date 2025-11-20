@@ -7,7 +7,7 @@
   <title>Choose Your Resume Template | Effective Resumes</title>
   <link rel="stylesheet" href="templatestyle.css" />
   <style>
-    /* Minimal page-specific styling; uses your existing styles.css base */
+    
     .template-hero {
       min-height: 40vh;
       display: grid;
@@ -101,8 +101,6 @@
         <p>Clean, contemporary layout with strong headings.</p>
         <div class="template-actions">
             <button class="btn-primary" onclick="openTemplate('resumeTemplate.html')">Use Template</button>
-
-          <!-- <button class="btn-outline" onclick="preview('images/modern-template.png')">Preview</button> -->
         </div>
       </div>
     </article>
@@ -115,8 +113,6 @@
         <p>Business-ready structure for corporate roles.</p>
         <div class="template-actions">
          <button class="btn-primary" onclick="openTemplate('resumeTemplate.html')">Use Template</button>
-
-          <!-- <button class="btn-outline" onclick="preview('images/professional-template.png')">Preview</button> -->
         </div>
       </div>
     </article>
@@ -143,15 +139,13 @@
 <script src="/front-config.js"></script>
 
   <script>
-    // Optional: require login before selecting template
-    // const token = localStorage.getItem("er_token");
-    // if (!token) window.location.href = "login.html";
+   
 
     function openTemplate(templatePage) {
-      // Save selected template type (if you want to use later)
+      
       localStorage.setItem("selected_template", templatePage);
 
-      // Redirect to resume builder page (relative)
+     
       window.location.href = templatePage;
     }
 

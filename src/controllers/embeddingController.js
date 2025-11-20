@@ -3,7 +3,7 @@ import Job from "../models/job.js";
 
 export const pushEmbeddings = async (req, res) => {
   try {
-    const items = req.body.items || []; // [{jobId, embedding: [...]}, ...]
+    const items = req.body.items || []; 
     let updated = 0;
     for (const it of items) {
       if (!it.jobId || !Array.isArray(it.embedding)) continue;

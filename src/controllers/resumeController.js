@@ -16,13 +16,8 @@ export const createResume = async (req, res) => {
 };
 
 
-
-// paste this into src/controllers/resumeController.js (replace existing createResumeFromText)
 export const createResumeFromText = async (req, res) => {
-  // debug log - helps verify what client sent
-  // console.log('--- /api/resumes/create request body ---');
-  // console.log(JSON.stringify(req.body, null, 2));
-  // console.log('--- end request body ---');
+  
 
   try {
     const { text, metadata, fileUrl: incomingFileUrl, parsedText } = req.body;
@@ -74,49 +69,6 @@ export const createResumeFromText = async (req, res) => {
   }
 };
 
-
-
-
-// export const createResumeFromText = async (req, res) => {
-//   try {
-//     const { text, metadata } = req.body;
-//     if (!text || text.trim().length === 0) return res.status(400).json({ message: 'Empty resume text' });
-
-//     // Save to DB
-//     const resumeDoc = new Resume({
-//       user: req.user._id,             // from auth middleware
-//       title: metadata?.name || 'Generated Resume',
-//       text,
-//       metadata,
-//       createdAt: new Date()
-//     });
-//     await resumeDoc.save();
-
-//     // Reuse pipeline: compute ATS score, embeddings, recommendations (implement in runAtsAndRecommend)
-//     // it should return { atsScore, recommendations } and save embeddings if you need to query later
-//     const processingResult = await runAtsAndRecommend(resumeDoc); 
-
-//     return res.json({
-//       resume: resumeDoc,
-//       atsScore: processingResult.atsScore,
-//       recommendations: processingResult.recommendations
-//     });
-
-//   } catch (err) {
-//     console.error('createResumeFromText', err);
-//     res.status(500).json({ message: 'Server error' });
-//   }
-// };
-
-// // Get All Resumes of Logged-in User
-// export const getResumes = async (req, res) => {
-//   try {
-//     const resumes = await Resume.find({ user: req.user.id });
-//     res.json(resumes);
-//   } catch (err) {
-//     res.status(500).json({ error: err.message });
-//   }
-// };
 
 // Get resume by id (protected)
 export const getResumeById = async (req, res) => {
@@ -234,16 +186,6 @@ export const saveAIResults = async (req, res) => {
         resume.aiSuggestions.push(recommendations);
       }
     }
-
-
-    // // Update fields
-    // if (atsScore !== undefined) resume.atsScore = atsScore;
-    // if (keywords) resume.keywords = Array.isArray(keywords) ? keywords : [keywords];
-    // if (recommendations !== undefined) {
-    //   resume.recommendations = Array.isArray(recommendations)
-    //     ? recommendations
-    //     : [recommendations];
-    // }
 
     
     await resume.save();

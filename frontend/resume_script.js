@@ -422,73 +422,6 @@ function showIframeFromBlob(blob) {
 }
 
 
-// async function saveAndAnalyzeTemplate() {
-//   const token = localStorage.getItem('er_token');
-//   if (!token) { alert('Please login first'); return; }
-
-//   const saveBtn = saveAnalyzeBtn || document.getElementById('saveAnalyzeBtn');
-//   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
-
-//   try {
-//     // 1) pick element for export
-//     const element = document.getElementById('resumePreview') || document.getElementById('previewWrapper');
-//     if (!element) {
-//       alert('Error: preview element not found. Make sure preview exists.');
-//       throw new Error('preview element not found');
-//     }
-
-//     // 2) convert DOM -> PDF blob
-//     const pdfBlob = await domToPdfBlob(element);
-
-//     // optional immediate preview on page
-//     showIframeFromBlob(pdfBlob);
-
-//     // 3) Upload to server
-//     const fd = new FormData();
-//     fd.append('resume', new File([pdfBlob], `resume-${Date.now()}.pdf`, { type: 'application/pdf' }));
-
-    
-
-// const API = window.ER_API;
-
-
-
-
-
-//     const upRes = await fetch(`${API}/api/resumes/upload`, {
-//       method: 'POST',
-//       headers: { 'Authorization': `Bearer ${token}` },
-//       body: fd
-//     });
-
-//     const upJson = await upRes.json().catch(()=>null);
-//     if (!upRes.ok) {
-//       console.error('Upload failed', upRes.status, upJson);
-//       throw new Error(upJson?.error || upJson?.message || `Upload failed (${upRes.status})`);
-//     }
-
-//     const resume = upJson.resume || upJson;
-//     const resumeId = resume._id || resume.id;
-//     const fileUrl = resume.fileUrl || resume.file || null;
-
-//     if (!resumeId) throw new Error('Server did not return resume id');
-
-//     // Save for results page
-//     localStorage.setItem('uploaded_resume_id', resumeId);
-//     if (fileUrl) localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(fileUrl));
-
-//    // Frontend redirect to the Live Server origin (5500). Use this only while developing with Live Server.
-// // const FRONTEND_ORIGIN = `${location.protocol}//${location.hostname}:5500`;
-// window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`
-
-//   } catch (err) {
-//     console.error('saveAndAnalyzeTemplate error:', err);
-//     alert('Error: ' + (err.message || err));
-//   } finally {
-//     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save & Analyze → PDF (A4)'; }
-//   }
-// }
-
 
 async function saveAndAnalyzeTemplate() {
   const token = localStorage.getItem('er_token') || localStorage.getItem("token");
@@ -558,7 +491,7 @@ async function saveAndAnalyzeTemplate() {
       });
 
       // 6️⃣ Redirect to results page
-      // window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`;
+     
         window.location.href = "result.html";
   } catch (err) {
       console.error("saveAndAnalyzeTemplate error:", err);
@@ -749,7 +682,7 @@ function goToResults() {
     localStorage.setItem("generatedResumeText", resumeText);
 
     window.location.href = "result.html";
-    // window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`;
+    
 
 }
 

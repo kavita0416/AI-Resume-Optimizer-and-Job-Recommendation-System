@@ -9,8 +9,6 @@ dotenv.config();
 const useTLS = process.env.REDIS_TLS === "true"; 
 
 
-// console.log("Redis Config =>", process.env.REDIS_HOST, process.env.REDIS_PORT, process.env.REDIS_TLS);
-
 export const connection = {
   host: process.env.REDIS_HOST,
   port: Number(process.env.REDIS_PORT),

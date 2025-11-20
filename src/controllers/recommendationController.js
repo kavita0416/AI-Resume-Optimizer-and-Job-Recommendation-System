@@ -4,10 +4,7 @@ import Resume from "../models/resume.js";
 import Job from "../models/job.js";
 import { rankJobs } from "../utils/recommender.js";
 
-/**
- * GET /api/resumes/recommendations/:resumeId?refresh=true&limit=5
- * - returns cached recommendations unless refresh=true
- */
+
 export const getRecommendations = async (req, res) => {
   try {
     const { resumeId } = req.params;

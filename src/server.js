@@ -18,7 +18,7 @@ const PORT = process.env.PORT || 5000;
 const frontendPath = path.resolve(__dirname, "..", "frontend");
 
 app.listen(PORT, () => {
-  console.log(`✅ MongoDB Connected`); // okay if your app logs it too
+  console.log(`✅ MongoDB Connected`); 
   console.log(`🚀 Server running on http://localhost:${PORT}`);
   console.log(`Serving frontend from: ${frontendPath}`);
 });

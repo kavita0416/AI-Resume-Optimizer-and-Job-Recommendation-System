@@ -49,8 +49,7 @@ textarea{resize:vertical}
 
 .analysis{margin-top:12px;padding:10px;border-radius:8px;background:#fff9e6;border:1px solid #f5e6b8}
 
-/* --- Resume (A4-proportioned on screen) --- */
-/* A4 at 96dpi: 210mm × 297mm -> ~794px × 1123px */
+
 .preview.a4{
   width: 794px;
   height: 1123px;

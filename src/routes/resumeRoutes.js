@@ -5,7 +5,7 @@ import express from "express";
 import { createResume, updateResume, deleteResume,saveAIResults } from "../controllers/resumeController.js";
 import { createResumeFromText } from '../controllers/resumeController.js';
 import { getResumeById } from "../controllers/resumeController.js";
-//import auth from "../middleware/auth.js";
+
 
 import upload from "../middleware/upload.js";
 import Resume from "../models/resume.js";
@@ -35,10 +35,6 @@ router.get("/recommendations/:resumeId", protect, getRecommendations);
 router.get("/recommendations/embed/:resumeId", protect, recommendByEmbedding);
 
 
-
-// router.post("/upload", upload.single("resume"), (req, res) => {
-//   res.json({ message: "Resume uploaded successfully", file: req.file });
-// });
 router.post("/upload", protect, upload.single("resume"), async (req, res) => {
   try {
     console.log("File received:", req.file);
