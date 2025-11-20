@@ -58,7 +58,8 @@ router.post("/upload", protect, upload.single("resume"), async (req, res) => {
       status: "pending"
     });
 
-    await resumeQueue.add("uploadResume", { resumeId: String(newResume._id) });
+    // await resumeQueue.add("uploadResume", { resumeId: String(newResume._id) });
+    await resumeQueue.add("processResume", { resumeId: String(newResume._id) });
 
 
     res.json({

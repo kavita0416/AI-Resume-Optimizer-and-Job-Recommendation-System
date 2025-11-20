@@ -13,9 +13,6 @@ await connectDB();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Connect DB
-//connectDB();
-
 
 const PORT = process.env.PORT || 5000;
 const frontendPath = path.resolve(__dirname, "..", "frontend");
@@ -27,10 +24,6 @@ app.listen(PORT, () => {
 });
 
 
-// const port = process.env.PORT || 5000;
-// app.listen(port, () => {
-//    console.log(`🚀 Server running on http://localhost:${PORT}`);
-// });
 
 
 

@@ -122,73 +122,13 @@
 <script src="/front-config.js"></script>
 
 <script>
-/* ---------------------------------------
-   INDEX PAGE JS — now using front-config
-----------------------------------------*/
 
-// const uploadBtn = document.getElementById("uploadButton");
-// const fileInput = document.getElementById("resumeUpload");
-// const uploadStatus = document.getElementById("uploadStatus");
 
 // Create resume
 document.getElementById("createResumeBtn").addEventListener("click", () => {
   window.location.href = "template.html";
 });
 
-// // Open file picker
-// uploadBtn.addEventListener("click", () => fileInput.click());
-
-// // Upload handler
-// fileInput.addEventListener("change", async () => {
-//   const { token } = getAuth() || {};
-//   const file = fileInput.files?.[0];
-
-//   if (!file) {
-//     uploadStatus.textContent = "❌ No file selected.";
-//     uploadStatus.style.color = "red";
-//     return;
-//   }
-//   if (!token) {
-//     uploadStatus.textContent = "⚠️ Please login first.";
-//     uploadStatus.style.color = "orange";
-//     return;
-//   }
-
-//   uploadStatus.textContent = `Uploading ${file.name}...`;
-//   uploadStatus.style.color = "black";
-
-//   const fd = new FormData();
-//   fd.append("resume", file);
-
-//   try {
-//     const res = await erFetch("/api/resumes/upload", {
-//       method: "POST",
-//       body: fd
-//     });
-
-//     const data = await res.json();
-//     if (!res.ok) throw new Error(data.error || data.message || "Upload failed");
-
-//     const resume = data.resume || data;
-//     const resumeId = resume._id;
-//     const fileUrl = resume.fileUrl || null;
-
-//     // cache for results.html preview
-//     localStorage.setItem("uploaded_resume_id", resumeId);
-//     if (fileUrl)
-//       localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(fileUrl));
-
-//     uploadStatus.textContent = `✅ Uploaded: ${resume.title}`;
-//     uploadStatus.style.color = "green";
-
-//     // redirect (relative)
-//     window.location.href = `results.html?resumeId=${resumeId}`;
-
-//   } catch (err) {
-//     uploadStatus.textContent = "❌ " + err.message;
-//     uploadStatus.style.color = "red";
-//   }
-// });
 </script>
 
 </body>

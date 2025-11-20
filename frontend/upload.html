@@ -42,13 +42,8 @@
 
   
 
-  <!-- Recommended Jobs Button
-  <div class="recommend-btn-container" style="display:none;">
-    <button id="recommendBtn" class="recommend-btn">
-      Recommended Jobs <span class="arrow">→</span>
-    </button>
-    
-  </div> -->
+  
+  </div>
 
   <!-- place under the ATS card in upload.html -->
   <div id="recommendations" style="display:none; margin-top:16px;">
@@ -61,15 +56,16 @@
   &copy; Resume Builder | Make your dream job possible!
 </footer>
 
-<!-- front-config.js provides window.ER_API, window.API_BASE, getAuth(), erFetch() -->
+
 <script src="/front-config.js"></script>
 
 
-<script>
-/* Cleaned upload + poll + recommend script for upload.html */
 
+<script>
 (function () {
-  // Elements
+  // ------------------------------------------------------
+  // ELEMENTS
+  // ------------------------------------------------------
   const uploadBtn = document.getElementById("uploadBtn");
   const fileInput = document.getElementById("resumeFile");
   const uploadStatus = document.getElementById("uploadStatus");
@@ -80,232 +76,187 @@
   const atsNoteEl = document.getElementById("atsNote");
   const atsSugEl = document.getElementById("atsSuggestions");
 
-  const recommendBtnContainer = document.querySelector(".recommend-btn-container");
-  const recommendBtnEl = document.getElementById("recommendBtn");
-
   const recRoot = document.getElementById("recommendations");
   const recList = document.getElementById("recommendationsList");
 
+
+  // ------------------------------------------------------
+  // HELPERS
+  // ------------------------------------------------------
+
   function setStatus(msg, color) {
-    if (!uploadStatus) return;
-    uploadStatus.textContent = msg || "";
-    uploadStatus.style.color = color || "";
+    uploadStatus.textContent = msg;
+    uploadStatus.style.color = color || "#fff";
   }
 
-  function getAuthSafe() {
-    return (window.getAuth && typeof window.getAuth === "function") ? window.getAuth() : { token: localStorage.getItem("er_token") };
+  function getToken() {
+    return localStorage.getItem("er_token") || localStorage.getItem("token");
   }
 
-  function currentApiBase() {
-    return window.ER_API || window.API_BASE || `${location.protocol}//${location.hostname}:5000`;
+  function getApiBase() {
+    return window.ER_API || window.API_BASE || "http://localhost:5000";
   }
 
-  // safe erFetch wrapper (use existing erFetch if present)
-  async function safeFetch(pathOrUrl, opts = {}) {
-    if (window.erFetch && typeof window.erFetch === "function") {
-      return window.erFetch(pathOrUrl, opts);
-    }
-    // if path provided, prefix API base
-    const isAbsolute = /^https?:\/\//i.test(pathOrUrl);
-    const url = isAbsolute ? pathOrUrl : `${currentApiBase()}${pathOrUrl.startsWith("/") ? "" : "/"}${pathOrUrl}`;
-    const headers = Object.assign({}, opts.headers || {});
-    const token = getAuthSafe().token;
-    if (token && !headers.Authorization) headers.Authorization = `Bearer ${token}`;
-    return fetch(url, Object.assign({}, opts, { headers }));
+  async function safeFetch(url, opts = {}) {
+    const full = url.startsWith("http")
+      ? url
+      : `${getApiBase()}${url}`;
+
+    const token = getToken();
+    const headers = opts.headers || {};
+
+    if (token) headers["Authorization"] = `Bearer ${token}`;
+
+    return fetch(full, { ...opts, headers });
   }
 
-  // Poll server for analysis; resolves when analysis is available or returns null on timeout
-  async function pollATS(resumeId, { intervalMs = 3000, maxTries = 60 } = {}) {
-    if (!resumeId) return null;
-    if (atsCard) atsCard.style.display = "block";
-    if (atsNoteEl) atsNoteEl.textContent = "Analyzing your resume…";
-    if (atsSugEl) atsSugEl.innerHTML = "";
-    if (atsScoreEl) atsScoreEl.textContent = "--";
 
-    let tries = 0;
-    while (tries++ < maxTries) {
-      try {
-        const resp = await safeFetch(`/api/resumes/${resumeId}`, { method: "GET" });
-        const data = await resp.json().catch(() => null);
-        if (resp.ok && data) {
-          // analysis might live at data.analysis or have atsScore
-          const analysis = data.analysis || (data.atsScore !== undefined ? { score: data.atsScore, suggestions: data.suggestions || [] } : null);
-          if (analysis && (analysis.score !== undefined || (analysis.suggestions && analysis.suggestions.length >= 0))) {
-            if (atsScoreEl) atsScoreEl.textContent = (typeof analysis.score === "number") ? String(analysis.score) : (analysis.score ?? "--");
-            if (atsNoteEl) atsNoteEl.textContent = "Analysis complete.";
-            if (atsSugEl) atsSugEl.innerHTML = (analysis.suggestions || []).map(s => `<li>${s}</li>`).join("") || "<li>No suggestions</li>";
-            // store cached analysis
-            try { localStorage.setItem(`resume_${resumeId}_analysis`, JSON.stringify(analysis)); } catch(e){/*ignore*/}
+  // ------------------------------------------------------
+  // POLL ATS RESULT (Node → ML backend results saved in DB)
+  // ------------------------------------------------------
+  async function pollATS(resumeId) {
+    let attempts = 0;
 
-            // notify listeners
-            document.dispatchEvent(new CustomEvent("ats:completed", { detail: { resumeId, analysis, raw: data } }));
-            return data;
-          }
+    atsCard.style.display = "block";
+    atsNoteEl.textContent = "Processing resume…";
+    atsScoreEl.textContent = "--";
+    atsSugEl.innerHTML = "";
 
-          if (data.status === "failed") {
-            if (atsNoteEl) atsNoteEl.textContent = "Analysis failed.";
-            return data;
-          }
-        }
-      } catch (err) {
-        console.warn("pollATS error", err);
-      }
-      await new Promise(r => setTimeout(r, intervalMs));
-    }
+    while (attempts < 60) {
+      attempts++;
 
-    if (atsNoteEl) atsNoteEl.textContent = "Still processing — try Refresh later.";
-    return null;
-  }
+      const res = await safeFetch(`/api/resumes/${resumeId}`);
+      const data = await res.json();
 
-  // Load recommendations and render into #recommendationsList
-  async function loadRecommendations(resumeId) {
-    if (!resumeId || !recRoot || !recList) return;
-    recRoot.style.display = "block";
-    recList.innerHTML = `<li class="muted">Loading recommendations…</li>`;
+      // Worker completed & ML result available
+      if (data.status === "completed" && data.analysis) {
+        const a = data.analysis;
 
-    try {
-      const embedUrl = `/api/resumes/recommendations/embed/${resumeId}?limit=8`;
-      let resp = await safeFetch(embedUrl, { method: "GET" });
-      let json = resp.ok ? await resp.json().catch(() => null) : null;
+        // Standardized ML result fields
+        const atsScore =
+          a.ats_score ||
+          a.atsScore ||
+          data.atsScore ||
+          "--";
 
-      if (!json || !((json.recommendations && json.recommendations.length) || (Array.isArray(json) && json.length))) {
-        const fallbackUrl = `/api/resumes/recommendations/${resumeId}?limit=8`;
-        resp = await safeFetch(fallbackUrl, { method: "GET" });
-        json = resp.ok ? await resp.json().catch(() => null) : null;
-      }
+        const suggestions =
+          a.improvement_tips ||
+          a.suggestions ||
+          data.improvementTips ||
+          [];
 
-      const recs = (json && (json.recommendations || json.data || json)) || [];
-      if (!recs || recs.length === 0) {
-        recList.innerHTML = `<li class="muted">No recommendations found.</li>`;
+        atsScoreEl.textContent = atsScore;
+        atsNoteEl.textContent = "Analysis complete.";
+        atsSugEl.innerHTML = suggestions.map(s => `<li>${s}</li>`).join("");
+
+        // Load recommended jobs
+        loadRecommendations(resumeId);
         return;
       }
 
-      recList.innerHTML = "";
-      recs.forEach(r => {
-        const li = document.createElement("li");
-        li.style.marginBottom = "8px";
-        const a = document.createElement("a");
-        a.href = r.url || "#";
-        a.target = "_blank";
-        a.rel = "noopener";
-        a.className = "link-job";
-        const score = (typeof r.score === "number") ? ` — ${r.score}` : "";
-        a.textContent = `${r.title || "Job"}${r.company ? ' @ ' + r.company : ''}${score}`;
-        li.appendChild(a);
-        recList.appendChild(li);
-      });
-    } catch (err) {
-      console.warn("loadRecommendations error", err);
-      recList.innerHTML = `<li class="muted">Unable to load recommendations.</li>`;
+      await new Promise(r => setTimeout(r, 2500));
     }
+
+    atsNoteEl.textContent = "Timeout — ML backend took too long.";
   }
 
-  // When analysis completes, automatically fetch recommendations
-  document.addEventListener("ats:completed", (e) => {
-    const resumeId = e?.detail?.resumeId;
-    if (resumeId) {
-      loadRecommendations(resumeId).catch(console.warn);
-    }
-  });
 
-  // Upload button handler
-  if (uploadBtn) {
-    uploadBtn.addEventListener("click", async function () {
-      try {
-        const file = fileInput.files?.[0];
-        if (!file) {
-          setStatus("❌ Please select a file.", "red");
-          return;
-        }
+  // ------------------------------------------------------
+  // LOAD JOB RECOMMENDATIONS
+  // ------------------------------------------------------
+  async function loadRecommendations(resumeId) {
+  recRoot.style.display = "block";
+  recList.innerHTML = `<li class="muted">Loading jobs…</li>`;
 
-        const auth = getAuthSafe();
-        if (!auth || !auth.token) {
-          setStatus("⚠️ Please login first.", "orange");
-          return;
-        }
-
-        setStatus(`Uploading ${file.name}…`);
-        uploadBtn.disabled = true;
-
-        const fd = new FormData();
-        fd.append("resume", file);
-
-        const uploadUrl = `/api/resumes/upload`;
-        const resp = await safeFetch(uploadUrl, { method: "POST", body: fd });
-        const upData = await resp.json().catch(() => null);
-        if (!resp.ok) {
-          const errMsg = upData?.error || upData?.message || `Upload failed (${resp.status})`;
-          throw new Error(errMsg);
-        }
-
-        const resume = upData.resume || upData;
-        const resumeId = resume._id || resume.id;
-        const fileUrl = resume.fileUrl || resume.file || null;
-
-        setStatus(`✅ Uploaded: ${resume?.title || file.name}`, "green");
-
-        if (resumeId) {
-          try { localStorage.setItem("uploaded_resume_id", resumeId); } catch(e){}
-        }
-        if (fileUrl && resumeId) {
-          try { localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(fileUrl)); } catch(e){}
-        }
-
-        // Show preview: prefer server fileUrl
-        previewContainer.innerHTML = "";
-        let src = null;
-        if (fileUrl) {
-          src = (typeof fileUrl === "string" && fileUrl.startsWith("/")) ? `${currentApiBase()}${fileUrl}` : fileUrl;
-        } else if (file.type === "application/pdf") {
-          src = URL.createObjectURL(file);
-        }
-
-        if (src) {
-          previewContainer.innerHTML = `<h3>Preview:</h3><iframe src="${src}" width="100%" height="600"></iframe>`;
-        } else {
-          previewContainer.innerHTML = `<h3>Uploaded</h3><p>${resume?.title || file.name}</p>`;
-        }
-
-        if (atsCard) atsCard.style.display = "block";
-        if (recommendBtnContainer) recommendBtnContainer.style.display = "block";
-
-        if (resumeId) {
-          // start polling for analysis
-          pollATS(resumeId, { intervalMs: 3000, maxTries: 60 }).catch(console.warn);
-        } else {
-          if (atsNoteEl) atsNoteEl.textContent = "Uploaded but server did not return an id; cannot poll.";
-        }
-      } catch (err) {
-        console.error("Upload error:", err);
-        setStatus(`❌ Upload failed: ${err?.message || err}`, "red");
-      } finally {
-        if (uploadBtn) uploadBtn.disabled = false;
-      }
-    });
-  }
-
-  // Recommend button shows inline recommendations (no navigation)
-  if (recommendBtnEl) {
-    recommendBtnEl.addEventListener("click", () => {
-      const resumeId = localStorage.getItem("uploaded_resume_id");
-      if (!resumeId) { alert("Please upload a resume first!"); return; }
-      loadRecommendations(resumeId).catch(console.warn);
-    });
-  }
-
-  // If cached analysis exists, render it immediately
   try {
-    const resumeId = localStorage.getItem("uploaded_resume_id");
-    const cached = resumeId ? JSON.parse(localStorage.getItem(`resume_${resumeId}_analysis`) || "null") : null;
-    if (cached && atsScoreEl && atsNoteEl) {
-      atsScoreEl.textContent = typeof cached.score === "number" ? String(cached.score) : (cached.score ?? "--");
-      atsNoteEl.textContent = "Analysis (cached)";
-      if (atsSugEl) atsSugEl.innerHTML = (cached.suggestions || []).map(s => `<li>${s}</li>`).join("");
-    }
-  } catch (e) { /* ignore */ }
+    const res = await safeFetch(`/api/resumes/recommendations/${resumeId}`);
+    const json = await res.json();
 
-})(); // IIFE end
+    const list = json.recommendations || [];
+
+    if (!Array.isArray(list) || list.length === 0) {
+      recList.innerHTML = `<li class="muted">No recommendations available.</li>`;
+      return;
+    }
+
+    recList.innerHTML = list
+      .map(job => `
+        <li>
+          <strong>${job.title}</strong> — ${job.company}
+          <br>Score: ${job.score}
+          <br>Location: ${job.location || "N/A"}
+          <br>
+          <a href="${job.url}" target="_blank">Apply</a>
+        </li>
+      `)
+      .join("");
+  } catch (err) {
+    recList.innerHTML = `<li class="muted">Error loading jobs</li>`;
+  }
+}
+
+
+
+  // ------------------------------------------------------
+  // MAIN UPLOAD HANDLER
+  // ------------------------------------------------------
+  uploadBtn.addEventListener("click", async () => {
+    const file = fileInput.files?.[0];
+
+    if (!file) return setStatus("Select a resume first", "red");
+
+    const token = getToken();
+    if (!token) return setStatus("Login required", "orange");
+
+    uploadBtn.disabled = true;
+    setStatus("Uploading...");
+
+    const fd = new FormData();
+    fd.append("resume", file);
+
+    // 1) UPLOAD RESUME → NODE.JS
+    const res = await safeFetch(`/api/resumes/upload`, {
+      method: "POST",
+      body: fd
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      setStatus("Upload failed: " + (data.message || data.error), "red");
+      uploadBtn.disabled = false;
+      return;
+    }
+
+    const resumeId = data.resume?._id || data._id;
+    const fileUrl = data.resume?.fileUrl || data.fileUrl;
+
+    localStorage.setItem("uploaded_resume_id", resumeId);
+    setStatus("Uploaded successfully!", "green");
+
+
+    // PDF preview
+    previewContainer.innerHTML = `
+      <h3>Preview:</h3>
+      <iframe src="${getApiBase()}${fileUrl}" width="100%" height="600"></iframe>
+    `;
+
+
+    // 2) TRIGGER ANALYSIS (Node → Worker → ML backend)
+    await safeFetch(`/api/resumes/${resumeId}/analyze`, {
+      method: "POST"
+    });
+
+    // 3) START POLLING ATS / ML RESULTS
+    pollATS(resumeId);
+
+    uploadBtn.disabled = false;
+  });
+})();
 </script>
+
+
+
 
 </body>
 </html>

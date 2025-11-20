@@ -1,7 +1,5 @@
-/* resume_script.js
-   Consolidated script for preview, PDF generation, upload and redirect.
-*/
-
+// resume_script.js
+  
 const qs = s => document.querySelector(s);
 
 // Form elements (left form)
@@ -31,7 +29,7 @@ const addProject = qs('#addProject');
 const addCertificate = qs('#addCertificate');
 const addExtra = qs('#addExtra');
 
-const saveAnalyzeBtn = qs('#saveAnalyze');
+const saveAnalyzeBtn = qs('#saveAnalyzeBtn');
 const downloadPngBtn = qs('#downloadPNG');
 const clearDataBtn = qs('#clearData');
 
@@ -359,42 +357,7 @@ function runAnalysis(data){
   analysisList.innerHTML = items.map(i=>`<li>${i}</li>`).join('');
 }
 
-/* ---------- domToPdfBlob (uses html2pdf.bundle) ---------- */
 
-// async function domToPdfBlob(element) {
-//   // fallback selectors if caller didn't pass element
-//   if (!element) {
-//     element =
-//       document.getElementById('resumePrintArea') ||
-//       document.getElementById('resumePreview') ||
-//       document.getElementById('previewWrapper') ||
-//       document.querySelector('.preview.a4');
-//   }
-//   if (!element) throw new Error('preview element not found (domToPdfBlob)');
-
-//   if (typeof html2pdf === 'undefined') {
-//     throw new Error('html2pdf library not found. Make sure html2pdf.bundle.min.js is included before resume_script.js');
-//   }
-
-//   const opt = {
-//     margin:       10,
-//     filename:     'resume.pdf',
-//     image:        { type: 'jpeg', quality: 0.98 },
-//     html2canvas:  { scale: 2, useCORS: true },
-//     jsPDF:        { unit: 'pt', format: 'a4', orientation: 'portrait' },
-//   };
-
-//   return new Promise((resolve, reject) => {
-//     try {
-//       // html2pdf().from(element).outputPdf('blob') returns a Promise
-//       html2pdf().set(opt).from(element).outputPdf('blob').then(blob => {
-//         resolve(blob);
-//       }).catch(err => reject(err));
-//     } catch (err) {
-//       reject(err);
-//     }
-//   });
-// }
 
 
 // domToPdfBlob implementation — returns a Blob of an A4 PDF
@@ -410,7 +373,11 @@ async function domToPdfBlob(element) {
   if (!element) throw new Error('preview element not found (domToPdfBlob)');
 
   // render at higher scale for crispness
-  const canvas = await html2canvas(element, { scale: 2, useCORS: true, backgroundColor: '#ffffff' });
+  const canvas = await html2canvas(element, { 
+  scale: window.devicePixelRatio * 2,   // uses real display DPI
+  useCORS: true,
+  backgroundColor: "#ffffff"
+});
 
   const imgData = canvas.toDataURL('image/png');
   const { jsPDF } = window.jspdf;
@@ -454,91 +421,156 @@ function showIframeFromBlob(blob) {
   document.querySelector('main')?.appendChild(preview);
 }
 
-/* ---------- Save, Upload and Redirect flow ---------- */
 
-/*
-  Flow:
-   - ensure user is logged in (token in localStorage)
-   - convert preview DOM -> PDF blob (domToPdfBlob)
-   - upload to /api/resumes/upload (multipart/form-data)
-   - on success store resumeId + fileUrl to localStorage
-   - redirect to results.html?resumeId=...
-*/
+// async function saveAndAnalyzeTemplate() {
+//   const token = localStorage.getItem('er_token');
+//   if (!token) { alert('Please login first'); return; }
+
+//   const saveBtn = saveAnalyzeBtn || document.getElementById('saveAnalyzeBtn');
+//   if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+
+//   try {
+//     // 1) pick element for export
+//     const element = document.getElementById('resumePreview') || document.getElementById('previewWrapper');
+//     if (!element) {
+//       alert('Error: preview element not found. Make sure preview exists.');
+//       throw new Error('preview element not found');
+//     }
+
+//     // 2) convert DOM -> PDF blob
+//     const pdfBlob = await domToPdfBlob(element);
+
+//     // optional immediate preview on page
+//     showIframeFromBlob(pdfBlob);
+
+//     // 3) Upload to server
+//     const fd = new FormData();
+//     fd.append('resume', new File([pdfBlob], `resume-${Date.now()}.pdf`, { type: 'application/pdf' }));
+
+    
+
+// const API = window.ER_API;
+
+
+
+
+
+//     const upRes = await fetch(`${API}/api/resumes/upload`, {
+//       method: 'POST',
+//       headers: { 'Authorization': `Bearer ${token}` },
+//       body: fd
+//     });
+
+//     const upJson = await upRes.json().catch(()=>null);
+//     if (!upRes.ok) {
+//       console.error('Upload failed', upRes.status, upJson);
+//       throw new Error(upJson?.error || upJson?.message || `Upload failed (${upRes.status})`);
+//     }
+
+//     const resume = upJson.resume || upJson;
+//     const resumeId = resume._id || resume.id;
+//     const fileUrl = resume.fileUrl || resume.file || null;
+
+//     if (!resumeId) throw new Error('Server did not return resume id');
+
+//     // Save for results page
+//     localStorage.setItem('uploaded_resume_id', resumeId);
+//     if (fileUrl) localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(fileUrl));
+
+//    // Frontend redirect to the Live Server origin (5500). Use this only while developing with Live Server.
+// // const FRONTEND_ORIGIN = `${location.protocol}//${location.hostname}:5500`;
+// window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`
+
+//   } catch (err) {
+//     console.error('saveAndAnalyzeTemplate error:', err);
+//     alert('Error: ' + (err.message || err));
+//   } finally {
+//     if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save & Analyze → PDF (A4)'; }
+//   }
+// }
+
+
 async function saveAndAnalyzeTemplate() {
-  const token = localStorage.getItem('er_token');
-  if (!token) { alert('Please login first'); return; }
+  const token = localStorage.getItem('er_token') || localStorage.getItem("token");
+  if (!token) { 
+      alert('Please login first'); 
+      return; 
+  }
 
-  const saveBtn = saveAnalyzeBtn || document.getElementById('saveAnalyze');
-  if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'Saving...'; }
+  const saveBtn = saveAnalyzeBtn || document.getElementById('saveAnalyzeBtn');
+  if (saveBtn) { 
+      saveBtn.disabled = true; 
+      saveBtn.textContent = 'Saving...'; 
+  }
 
   try {
-    // 1) pick element for export
-    const element = document.getElementById('resumePreview') || document.getElementById('previewWrapper');
-    if (!element) {
-      alert('Error: preview element not found. Make sure preview exists.');
-      throw new Error('preview element not found');
-    }
+      // 1️⃣ Convert resume preview → PDF Blob
+      const element = document.getElementById('resumePreview') 
+                    || document.getElementById('previewWrapper');
 
-    // 2) convert DOM -> PDF blob
-    const pdfBlob = await domToPdfBlob(element);
+      if (!element) {
+          alert('Preview not found!');
+          throw new Error('Preview DOM missing');
+      }
 
-    // optional immediate preview on page
-    showIframeFromBlob(pdfBlob);
+      const pdfBlob = await domToPdfBlob(element);
 
-    // 3) Upload to server
-    const fd = new FormData();
-    fd.append('resume', new File([pdfBlob], `resume-${Date.now()}.pdf`, { type: 'application/pdf' }));
+      // Optional local preview
+      showIframeFromBlob(pdfBlob);
 
-    // API base - update if your backend runs on a different port/host
-    // const API_PORT = 5000;
-    // const API_BASE = `${location.protocol}//${location.hostname}:${API_PORT}`;
+      // 2️⃣ Build FormData for Node backend
+      const fd = new FormData();
+      fd.append(
+          "resume",
+          new File([pdfBlob], `resume-${Date.now()}.pdf`, { type: "application/pdf" })
+      );
 
-//   // Use this in frontend scripts
-// const API_PORT = 5000;
-// const API_BASE = `${location.protocol}//${location.hostname}:${API_PORT}`;
-// // e.g. http://localhost:5000
+      // 3️⃣ Upload PDF to Node backend
+      const API = window.ER_API || "http://localhost:5000";
 
-// after a successful upload create resumeId...
+      const uploadRes = await fetch(`${API}/api/resumes/upload`, {
+          method: "POST",
+          headers: { 
+              Authorization: `Bearer ${token}` 
+          },
+          body: fd
+      });
 
-const API = window.ER_API;
+      const uploadJson = await uploadRes.json();
 
+      if (!uploadRes.ok) {
+          console.error("Upload error:", uploadJson);
+          throw new Error(uploadJson.error || uploadJson.message || "Upload failed");
+      }
 
+      const resume = uploadJson.resume || uploadJson;
+      const resumeId = resume._id;
 
+      if (!resumeId) throw new Error("resumeId missing from server response");
 
+      // 4️⃣ Save for frontend reference
+      localStorage.setItem("uploaded_resume_id", resumeId);
 
-    const upRes = await fetch(`${API}/api/resumes/upload`, {
-      method: 'POST',
-      headers: { 'Authorization': `Bearer ${token}` },
-      body: fd
-    });
+      // 5️⃣ Trigger ML analysis
+      await fetch(`${API}/api/resumes/${resumeId}/analyze`, {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` }
+      });
 
-    const upJson = await upRes.json().catch(()=>null);
-    if (!upRes.ok) {
-      console.error('Upload failed', upRes.status, upJson);
-      throw new Error(upJson?.error || upJson?.message || `Upload failed (${upRes.status})`);
-    }
-
-    const resume = upJson.resume || upJson;
-    const resumeId = resume._id || resume.id;
-    const fileUrl = resume.fileUrl || resume.file || null;
-
-    if (!resumeId) throw new Error('Server did not return resume id');
-
-    // Save for results page
-    localStorage.setItem('uploaded_resume_id', resumeId);
-    if (fileUrl) localStorage.setItem(`resume_${resumeId}_fileUrl`, JSON.stringify(fileUrl));
-
-   // Frontend redirect to the Live Server origin (5500). Use this only while developing with Live Server.
-// const FRONTEND_ORIGIN = `${location.protocol}//${location.hostname}:5500`;
-window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`
-
+      // 6️⃣ Redirect to results page
+      // window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`;
+        window.location.href = "result.html";
   } catch (err) {
-    console.error('saveAndAnalyzeTemplate error:', err);
-    alert('Error: ' + (err.message || err));
+      console.error("saveAndAnalyzeTemplate error:", err);
+      alert("Error: " + (err.message || err));
   } finally {
-    if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'Save & Analyze → PDF (A4)'; }
+      if (saveBtn) { 
+          saveBtn.disabled = false; 
+          saveBtn.textContent = "Save & Analyze → PDF (A4)";
+      }
   }
 }
+
 
 /* ---------- Generate PDF download (local) ---------- */
 
@@ -694,11 +726,35 @@ projectList.addEventListener('input', renderPreview);
 certificateList.addEventListener('input', renderPreview);
 extraList.addEventListener('input', renderPreview);
 
-if (saveAnalyzeBtn) saveAnalyzeBtn.addEventListener('click', e => { e.preventDefault(); saveAndAnalyzeTemplate(); });
+if (saveAnalyzeBtn) {
+    saveAnalyzeBtn.addEventListener('click', async (e) => {
+        e.preventDefault();
+        console.log("Save & Analyze clicked"); // Debug
+      
+        await saveAndAnalyzeTemplate();  // 🚀 PDF upload + ML trigger
+
+        console.log("Redirect step running"); // Debug
+    });
+}
+
 if (downloadPngBtn) downloadPngBtn.addEventListener('click', e => { e.preventDefault(); downloadPNG(); });
 if (clearDataBtn) clearDataBtn.addEventListener('click', e => { e.preventDefault(); if(confirm('Clear saved data?')){ localStorage.removeItem(STORAGE_KEY); location.reload(); } });
 
 /* ---------- init ---------- */
+
+function goToResults() {
+    const resumeText = document.getElementById("resumeOutput").innerText;
+
+    // Save text for result.html
+    localStorage.setItem("generatedResumeText", resumeText);
+
+    window.location.href = "result.html";
+    // window.location.href = `${location.origin}/frontend/result.html?resumeId=${resumeId}`;
+
+}
+
+
+
 
 ensureStarter();
 loadData();

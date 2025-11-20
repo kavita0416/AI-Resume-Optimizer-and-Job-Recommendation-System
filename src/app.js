@@ -51,13 +51,6 @@ if (fs.existsSync(frontendPathStr)) {
 // Serve frontend files at root (no /frontend prefix) so URLs like /results.html work
 app.use(express.static(frontendPathStr));
 
-// // Serve uploaded files (so /uploads/xxx.pdf works)
-// const uploadsPath = path.join(process.cwd(), "uploads");
-// if (!fs.existsSync(uploadsPath)) {
-//   // create uploads folder if missing (optional)
-//   try { fs.mkdirSync(uploadsPath, { recursive: true }); } catch (e) { /* ignore */ }
-// }
-// app.use("/uploads", express.static(uploadsPath));
 
 
 // Serve uploads (if you use uploads)

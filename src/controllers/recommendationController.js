@@ -38,7 +38,16 @@ export const getRecommendations = async (req, res) => {
     resume.recommendations = ranked; // store array of objects (jobId, title, company, score...)
     await resume.save();
 
-    return res.json({ source: "computed", recommendations: ranked });
+    return res.json({
+      source: "computed",
+      recommendations: ranked.map(job => ({
+        title: job.title,
+        company: job.company,
+        score: job.score,
+        location: job.location || "",
+        url: job.url || job.apply_link || "",
+      }))
+    });
   } catch(err){
     console.error("Recommendation error:", err);
     return res.status(500).json({ message: "Server error", error: err.message });

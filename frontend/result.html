@@ -21,6 +21,61 @@
     .small-muted { font-size:0.9rem; color:#9aa7b8; margin-left:8px; }
     .btn-main { padding:8px 12px; border-radius:8px; background:#111827; color:#fff; border:0; cursor:pointer; }
     .btn[disabled] { opacity:0.6; cursor:not-allowed; }
+
+
+    .previewBox {
+    background: #111317;
+    padding: 0;
+    border-radius: 10px;
+    height: 800px; /* set height of box */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#pdfPreview {
+    width: 100%;
+    height: 100%;
+    border: none;
+    object-fit: contain; /* ensures full clean fit */
+}
+
+
+    .layout {
+        
+        /* grid-template-columns: 1.3fr 1fr; */
+        display: grid;
+    grid-template-columns: 1fr 350px;
+    align-items: stretch;
+    }
+
+    .left {
+        width: 100%;
+    }
+
+    .right-sidebar {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+
+    /* make it stretch to match left preview height */
+    height: 100%;
+}
+
+.right-sidebar .card {
+    width: 100%;
+}
+
+.right-sidebar {
+    height: calc(100vh - 150px); /* adjust top spacing */
+    overflow-y: auto;
+    padding-right: 5px; /* avoid cutoff */
+}
+
+
+
+
+
   </style>
 </head>
 <body>
@@ -38,49 +93,159 @@
   </nav>
 
   <main>
-    <h1>Resume Analysis & Recommendations</h1>
+    <h2>Resume Analysis & Recommendations</h2>
     <p class="muted">Preview your uploaded/generated PDF and view ATS score + job matches. This page auto-refreshes until analysis is available.</p>
 
     <div class="layout">
       <!-- left: preview iframe -->
-      <div>
-        <div class="section-title">Preview:</div>
+      <div class="left">
+        <h3 class="section-title">Preview:</h3>
         <div class="previewBox" id="previewBox">
-          <div id="previewPlaceholder" style="color:#cfe3ff;">Loading preview…</div>
+            <!-- <iframe id="pdfPreview" class="previewIframe"></iframe> -->
+            <object id="pdfPreview" type="application/pdf" class="previewIframe"></object>
+
         </div>
 
         <div style="margin-top:14px;">
-          <button id="downloadBtn" class="btn-main">Download PDF</button>
-          <button id="refreshBtn" class="btn ghost" style="margin-left:10px">Refresh</button>
-          <span id="statusText" style="margin-left:14px;color:#6b7280"></span>
+            <button id="downloadBtn" class="btn-main">Download PDF</button>
+            <button id="refreshBtn" class="btn ghost">Refresh</button>
+            <span id="statusText" class="muted"></span>
         </div>
-      </div>
+    </div>
 
       <!-- right: ATS card + recommendations -->
-      <aside>
-        <div class="card" id="atsCard">
-          <div style="font-weight:700">ATS Score</div>
-          <div class="ats-score" id="atsScore">--</div>
-          <div id="atsNote" class="processing">Analyzing your resume…</div>
-          <ul id="atsSuggestions" style="margin-top:8px"></ul>
+      <aside class="right-sidebar">
+        <div class="card">
+            <h3>ATS Score</h3>
+            <div id="atsScore" class="score">--</div>
+            <p id="atsStatus">Analyzing your resume...</p>
         </div>
 
-        <div style="margin-top:18px;">
-          <div class="section-title">Recommended Jobs</div>
-          <ul id="recList" class="recs"></ul>
+        <div class="card">
+            <h3>Recommended Jobs</h3>
+            <ul id="jobList"></ul>
         </div>
-      </aside>
+
+        <div class="card">
+            <h3>Skills</h3>
+            <ul id="skillsList"></ul>
+        </div>
+
+        <div class="card">
+            <h3>Improvement Tips</h3>
+            <ul id="tipsList"></ul>
+        </div>
+    </aside>
     </div>
   </main>
 
+
+  
+<!-- 
 <script>
-/* Results page script:
-   - Reads resumeId from ?resumeId=... or localStorage.uploaded_resume_id
-   - Renders preview (prefers cached resume_<id>_fileUrl)
-   - Polls /api/resumes/:id for analysis and updates ATS UI
-   - Loads recommended jobs (tries embed endpoint then fallback)
-   - Download button fetches the file and triggers download
-*/
+
+// ============================================================
+// 1) TEXT-BASED RESUME FLOW (from resumeTemplate.html)
+// ============================================================
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const token = localStorage.getItem("er_token") || localStorage.getItem("token");
+    const text = localStorage.getItem("generatedResumeText");
+
+    // If resume was NOT generated from template → skip this block completely
+    if (!text) return;  
+
+    // Prevent double-creation when user refreshes
+    if (localStorage.getItem("generatedResumeId")) return;
+
+    // Create resume in backend using TEXT
+    const res = await fetch("/api/resumes/create", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+            text: text,
+            parsedText: text,
+            metadata: { title: "Generated Resume" }
+        })
+    });
+
+    const data = await res.json();
+    const resumeId = data.resume?._id || data._id;
+
+    if (!resumeId) {
+        alert("Failed to create resume from text");
+        return;
+    }
+
+    // Store ID for polling
+    localStorage.setItem("generatedResumeId", resumeId);
+
+    // Start ATS polling
+    pollATS(resumeId);
+});
+
+// ============================================================
+// 2) POLLING + RENDERING FOR TEXT-BASED RESUMES
+// ============================================================
+
+async function pollATS(resumeId) {
+    let tries = 0;
+
+    while (tries++ < 60) {
+        const token = localStorage.getItem("er_token") || localStorage.getItem("token");
+
+        const res = await fetch(`/api/resumes/${resumeId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const data = await res.json();
+
+        if (data.status === "completed" && data.analysis) {
+            renderResults(data);
+            loadRecommendations(resumeId);
+            return;
+        }
+
+        await new Promise(r => setTimeout(r, 3000));
+    }
+
+    document.getElementById("atsScore").innerText = "Processing Timeout";
+}
+
+function renderResults(data) {
+    document.getElementById("atsScore").innerText = data.atsScore || "--";
+
+    document.getElementById("atsSuggestions").innerHTML =
+        (data.analysis?.suggestions || []).map(t => `<li>${t}</li>`).join("");
+}
+
+async function loadRecommendations(resumeId) {
+    const token = localStorage.getItem("er_token") || localStorage.getItem("token");
+
+    const res = await fetch(`/api/resumes/recommendations/embed/${resumeId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+
+    const data = await res.json();
+    const recs = data.recommendations || [];
+
+    document.getElementById("recList").innerHTML = recs.map(job => `
+        <li>
+            <strong>${job.title}</strong> @ ${job.company}
+            <br>Score: ${job.score}
+            <br><a href="${job.url}" target="_blank">Apply</a>
+        </li>
+    `).join("");
+}
+
+
+</script> -->
+
+<!-- <script>
+
 
 (async function () {
   // helpers from front-config may already exist on the page,
@@ -361,7 +526,102 @@
   });
 
 })();
+</script> -->
+
+
+<script>
+(async () => {
+    const API = window.ER_API || "http://localhost:5000";
+
+    const urlParams = new URLSearchParams(window.location.search);
+    let resumeId = urlParams.get("resumeId") || localStorage.getItem("uploaded_resume_id");
+
+    const token = localStorage.getItem("er_token") || localStorage.getItem("token");
+
+    if (!resumeId) {
+        document.getElementById("pdfPreview").innerHTML = "No resume found.";
+        return;
+    }
+
+    // -------------------------------
+    // POLL RESUME STATUS
+    // -------------------------------
+    async function poll() {
+        const res = await fetch(`${API}/api/resumes/${resumeId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+
+        // --- Preview PDF ---
+        if (data.fileUrl) {
+        const pdfURL = `${API}${data.fileUrl.startsWith("/") ? data.fileUrl : "/" + data.fileUrl}`;
+        document.getElementById("pdfPreview").data = pdfURL;
+      }
+
+
+        // Still processing
+        if (data.status !== "completed") {
+            document.getElementById("atsStatus").innerText = "Analyzing your resume...";
+            setTimeout(poll, 3000);
+            return;
+        }
+
+        // -------------------------------
+        // ATS Score + Skills + Tips
+        // -------------------------------
+        const analysis = data.analysis || {};
+
+        document.getElementById("atsScore").innerText =
+            analysis.ats_score ?? "--";
+
+        document.getElementById("atsStatus").innerText = "Analysis complete.";
+
+        document.getElementById("skillsList").innerHTML =
+            (analysis.skills || [])
+                .map(s => `<li>${s}</li>`)
+                .join("");
+
+        document.getElementById("tipsList").innerHTML =
+            (analysis.improvement_tips || [])
+                .map(t => `<li>${t}</li>`)
+                .join("");
+
+        // -------------------------------
+        // Load Recommended Jobs
+        // -------------------------------
+        loadJobs();
+    }
+
+    async function loadJobs() {
+        const res = await fetch(`${API}/api/resumes/recommendations/${resumeId}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        });
+
+        const jobs = await res.json();
+        const list = document.getElementById("jobList");
+
+        if (!jobs.recommendations || jobs.recommendations.length === 0) {
+            list.innerHTML = "<li>No recommendations found.</li>";
+            return;
+        }
+
+        list.innerHTML = jobs.recommendations.map(j => `
+            <li>
+                <strong>${j.title}</strong><br>
+                ${j.company} — ${j.location}<br>
+                Score: ${j.score}<br>
+                <a target="_blank" href="${j.url}">Apply</a>
+            </li>
+        `).join("");
+    }
+
+    poll();
+
+})();
 </script>
+
+
+
 
 </body>
 </html>
